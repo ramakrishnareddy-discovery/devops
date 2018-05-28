@@ -6,8 +6,9 @@ node {
 			[$class: 'LogRotator', numToKeepStr: '3']],
 		disableConcurrentBuilds(),
 		parameters([
-			choice(choices: ["master"].join("\n"), description: 'Branch Name', name: 'GIT_BRANCH'),
-			booleanParam(name: 'GIT_TAG', defaultValue: false, 	description: 'Tagging required or not')
+			choice(choices: ["master","develop"].join("\n"), description: 'Branch Name', name: 'GIT_BRANCH'),
+			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not'),
+			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Image store required or not')
 		]),
 		pipelineTriggers([
 			//pollSCM('H/15 * * * *'),
@@ -21,21 +22,51 @@ node {
 		def workspacePath = pwd()
 		def mvnHome = tool name: "Maven_V3"
 		env.PATH = "${mvnHome}/bin:${env.PATH}"
-		def commonRepoUrl = "ssh://git@innersource.accenture.com/appq/common.git"
+		def apiUrl = 'ssh://git@innersource.accenture.com/appq/demandplannerapi.git' 
+		def distroDirPath = "/product/jenkins/distro"
 		// =========== USER DEFINED VARS ===========
 
 		stage('Git Checkout') {
 			deleteDir()
 			echo "Checkout in progress..."
-			dir('common') {
+			dir('demandplannerapi') {
 				git branch: '${GIT_BRANCH}',
 				credentialsId: 'git-repo-ssh-access',
-				url: 'ssh://git@innersource.accenture.com/appq/common.git'
+				url: 'ssh://git@innersource.accenture.com/appq/demandplannerapi.git'
+			}
+
+			
+			if(!fileExists(distroDirPath))
+			{
+				echo "${distroDirPath} doesn't exist.Continue cloning ..."
+				dir('demandplannerapi') {
+					git branch: '${GIT_BRANCH}',
+					credentialsId: 'git-repo-ssh-access',
+					url: 'ssh://git@innersource.accenture.com/appq/demandplannerapi.git'
+				}
+			}
+			else {
+					echo "${distroDirPath} is already exist.Continue updating ..."
+					dir(distroDirPath) { sh "git pull origin HEAD:master" }	
 			}
 		}
 
 		stage ('Maven Build') {
-			dir('common') { sh "mvn clean install -Dmaven.test.skip=true" }
+				dir('demandplannerapi') { sh "mvn -Dmaven.test.failure.ignore clean package" }
+		}
+
+		stage ('Junit Test') { dir('demandplannerapi') {sh "mvn test" }}
+
+		stage('Docker Build'){
+				try {
+					sh 'sudo docker rmi -f $(docker images | grep ${getArtifact} | awk \"{print $3}\")'
+				} catch (err) {
+					echo "Caught: ${err}"
+				}
+				dir('demandplannerapi') {
+					echo "Starting Docker Image Creation..."
+					sh "mvn docker:build" }
+				echo "Docker Image Creation Complted..."
 		}
 
 		stage('SonarQube Analysis') {
@@ -47,9 +78,6 @@ node {
 			}
 		}
 
-	 	//Commenting as Common project doesnt' have Unit Tests:
-		//Since common project doesn't have unit tests, qualityGate status is failing eventually Pipeline aborted due to quality gate failure: ERROR
-	
 		// Configure a webhook in your SonarQube server pointing to <your Jenkins instance>/sonarqube-webhook/
 		stage("SonarQube Quality Gate") {
 			// Just in case something goes wrong, pipeline will be killed after a timeout
@@ -57,29 +85,13 @@ node {
 				def qualityGate = waitForQualityGate() // Reuse taskId previously collected by withSonarQubeEnv
 				if (qualityGate.status != 'OK') {
 					//error "Pipeline aborted due to quality gate failure: ${qualityGate.status}"
-					println("SonarQube Quality Gate Failed.failure: ${qualityGate.status}")
+					println("SonarQube Quality Gate Failed.failure: ${qualityGate.status}")	
 				} else
 				{
 					println("SonarQube Quality Gate Passed")
 				}
 			}
 		}
-	
-
-		if (GIT_TAG.toBoolean()) {
-			stage('Tag Branch'){
-				def releasedVersion = getReleasedVersion()
-				sshagent (credentials: ['git-repo-ssh-access']) {
-						dir('common') {
-							sh "ls -l"
-							sh "git remote set-url origin ${commonRepoUrl}"
-							//sh "git tag ${IMAGE_BRANCH_PREFIX}-${BUILD_NUMBER}"
-							sh "git tag ${releasedVersion}-${BUILD_NUMBER}"
-							sh "git push --tags"
-						}
-				}
-		    }
-		}	
 	}
 	catch (Error) {
 		println Error
@@ -91,3 +103,7 @@ def getReleasedVersion() {
     matcher ? matcher[0][1] : null 	
 }
 
+def getArtifact() {
+	def matcher = readFile('common/pom.xml') =~ '<artifactId>(.+?)</artifactId>'
+    matcher ? matcher[0][1] : null 	
+}
