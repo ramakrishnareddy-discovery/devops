@@ -150,11 +150,11 @@ node {
 }
 
 def getReleasedVersion() {
-	def matcher = readFile('common/pom.xml') =~ '<version>(.+?)</version>'
+	def matcher = readFile('demandplannerapi/pom.xml') =~ '<version>(.+?)</version>'
 	matcher ? matcher[0][1] : null
 }
 
 def getArtifact() {
-	def matcher = readFile('common/pom.xml') =~ '<artifactId>(.+?)</artifactId>'
+	def matcher = readFile('demandplannerapi/pom.xml') =~ '<artifactId>(.+?)</artifactId>'
 	matcher ? matcher[0][1] : null
 }
