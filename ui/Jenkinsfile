@@ -63,19 +63,17 @@ node {
 		//This stage installs all of the node dependencies, performs linting and builds the code.
 		stage('NPM Build') {
 			//npm install -g npm@4.0.3 @angular/cli@1.0.4
-            // TODO: //ng lint Update her about ng lint
-            try {
-                dir('demandplannerui') { 
-                    sh '''
+			// TODO: //ng lint Update her about ng lint
+			try {
+				dir('demandplannerui') { sh '''
                         node --version
                         npm --version
                         npm install -g npm@5.6.0 @angular/cli@~1.7.3
                         npm install
                         ng lint
                         ng build --prod --no-sourcemaps
-                    ''' 
-            }}catch (err) {
-					echo "NPM Build Stage Caught: ${err}"
+                    '''  }}catch (err) {
+				echo "NPM Build Stage Caught: ${err}"
 			}
 			// ng serve --port 4200
 			// npm start
@@ -84,7 +82,7 @@ node {
 
 
 		// TODO: skipping testign as of now
-        // TODO: npm test make necessary changes.Launching browser ChromeHeadless
+		// TODO: npm test make necessary changes.Launching browser ChromeHeadless
 		stage ('NPM Test') {
 			dir('demandplannerui') {
 
@@ -93,10 +91,24 @@ node {
 				}}
 		}
 
+		/* TODO: parameterize project version
+		 * " -Dsonar.projectKey=demo:demandplannerui"+
+		 * " -Dsonar.projectName=demandplannerui" +
+		 * " -Dsonar.projectVersion=V1" +
+		 */
 		stage('SonarQube Analysis') {
 			dir('demandplannerui') {
-				withSonarQubeEnv('SonarQube_V7') { // SonarQube taskId is automatically attached to the pipeline context
-					sh "mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.3.0.603:sonar" }
+				withSonarQubeEnv('SonarQube_V7') {
+					sh 'ls -l'
+					sh "${sonarqubeScannerHome}/bin/sonar-scanner"+
+							" -Dsonar.sources=src" +
+							" -Dsonar.exclusions=**/node_modules/**,**/*.spec.ts" +
+							" -Dsonar.tests=src" +
+							" -Dsonar.test.inclusions=**/*.spec.ts" +
+							" -Dsonar.ts.tslintconfigpath=tslint.json" +
+							" -Dsonar.ts.lcov.reportpath=test-results/coverage/coverage.lcov" +
+							" -Dsonar.sourceEncoding=UTF-8"
+				}
 			}
 		}
 
