@@ -12,11 +12,14 @@ node {
 			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Image store required or not'),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not')
 		]),
-		pipelineTriggers([
+		
+		pipelineTriggers(
+			[upstream(threshold: hudson.model.Result.SUCCESS,upstreamProjects: "common")
 			//pollSCM('H/15 * * * *'),
 			//pollSCM('* * * * *'),
 			//cron('@daily')
-		])
+			]
+		)
 	])
 
 	try {
