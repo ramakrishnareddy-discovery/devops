@@ -113,7 +113,7 @@ node {
 				sh "docker images"
 				dir ('demandplannerapi') {
 					//docker save -o <path for generated tar file> <image name>
-					sh "docker save -o target/${artifactName}.tar ${artifactName}:${releasedVersion}"
+					sh "docker save -o target/${artifactName}.tar ${artifactName}"
 					//sh "docker tag ${artifactName} ${artifactName}-${releasedVersion}"
 				}
 
