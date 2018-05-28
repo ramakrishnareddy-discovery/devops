@@ -145,8 +145,8 @@ node {
 
 		stage('deploy'){
 			sh "docker ps"
-			sh 'docker ps --no-trunc -aqf "name=${artifactName}"'
-			sh 'docker run -e "SPRING_PROFILES_ACTIVE=${PROP_ENV}" -d -p 8099:8090 --name  ${artifactName} -t ${artifactName}:${releasedVersion}'
+			sh "docker ps --no-trunc -aqf 'name=${artifactName}'"
+			sh "docker run -e 'SPRING_PROFILES_ACTIVE=${PROP_ENV}' -d -p 8099:8090 --name  ${artifactName} -t ${artifactName}:${releasedVersion}"
 			//$ docker run -e "SPRING_PROFILES_ACTIVE=prod" -p 8080:8080 -t springio/gs-spring-boot-docker
 			//$ docker run -e "SPRING_PROFILES_ACTIVE=dev" -p 8080:8080 -t springio/gs-spring-boot-docker
 		}
