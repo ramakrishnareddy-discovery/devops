@@ -25,7 +25,7 @@ node {
 		env.PATH = "${mvnHome}/bin:${env.PATH}"
 		def apiRepoUrl = 'ssh://git@innersource.accenture.com/appq/demandplannerapi.git' 
 		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro.git'
-		def distroDirPath = "/product/jenkins/distro"
+		def distroDirPath = "/tmp/jenkins/distro"
 		// =========== USER DEFINED VARS ===========
 
 		stage('Git Checkout') {
@@ -42,7 +42,7 @@ node {
 			{
 				sh "whoami"
 				echo "${distroDirPath} doesn't exist.Continue cloning ..."
-				sh "sudo mkdir -p ${distroDirPath}"
+				//sh "sudo mkdir -p ${distroDirPath}"
 
 				dir(distroDirPath){
 					/*
