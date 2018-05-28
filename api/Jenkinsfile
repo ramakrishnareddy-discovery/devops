@@ -37,20 +37,16 @@ node {
 				url: 'ssh://git@innersource.accenture.com/appq/demandplannerapi.git'
 			}
 
-			
+			// Check for directory			
 			if(!fileExists(distroDirPath))
 			{
 				sh "whoami"
 				echo "${distroDirPath} doesn't exist.Continue cloning ..."
-				//sh "sudo mkdir -p ${distroDirPath}"
 
 				dir(distroDirPath){
-					
-					git branch: '${GIT_BRANCH}',
+					git branch: '${DISTRO_GIT_BRANCH}',
 					credentialsId: 'git-repo-ssh-access',
 					url: 'ssh://git@innersource.accenture.com/appq/distro.git'
-					
-					//sh "git clone -b ${DISTRO_GIT_BRANCH} ${distroRepoUrl} ${distroDirPath}"
 				}
 			}
 			else {
@@ -67,7 +63,7 @@ node {
 
 		stage('Docker Build'){
 				try {
-					sh 'sudo docker rmi -f $(docker images | grep ${getArtifact} | awk \"{print $3}\")'
+					sh 'sudo docker rmi -f $(docker images | grep ${getArtifact()} | awk \"{print $3}\")'
 				} catch (err) {
 					echo "Caught: ${err}"
 				}
