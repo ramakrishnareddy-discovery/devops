@@ -6,7 +6,7 @@ node {
 			[$class: 'LogRotator', numToKeepStr: '3']],
 		disableConcurrentBuilds(),
 		parameters([
-			choice(choices: ["master", "develop", "feature/pipeline"].join("\n"), description: 'Branch Name', name: 'GIT_BRANCH'),
+			choice(choices: ["develop", "master"].join("\n"), description: 'Branch Name', name: 'GIT_BRANCH'),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, 	description: 'Tagging required or not')
 		]),
 		pipelineTriggers([
@@ -29,7 +29,7 @@ node {
 			dir('common') {
 				git branch: '${GIT_BRANCH}',
 				credentialsId: 'git-repo-ssh-access',
-				url: '${commonRepoUrl}'
+				url: ${commonRepoUrl}
 			}
 		}
 
