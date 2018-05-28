@@ -113,14 +113,12 @@ node {
 				sh "docker images"
 				dir ('demandplannerapi') {
 					//docker save -o <path for generated tar file> <image name>
-					sh "docker save -o target/${artifactName}.tar ${artifactName}"
-					//sh "docker tag ${artifactName} ${artifactName}-${releasedVersion}"
+					sh "docker save -o target/${artifactName}-${releasedVersion}.tar ${artifactName}:${releasedVersion}"
 				}
 
 				dir('demandplannerapi'){
-					echo "Copy Process Started..."
+					echo "Copying tar file..."
 					sh "cp -rf target/${artifactName}-${releasedVersion}.tar ${workspacePath}/distro"
-					echo "Copy Process Started..."
 				}
 				
 				dir ('distro') {
