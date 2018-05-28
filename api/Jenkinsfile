@@ -112,16 +112,13 @@ node {
 			sshagent (credentials: ['git-repo-ssh-access']) {
 				sh "docker images"
 				dir ('demandplannerapi') {
-					//docker save -o <path for generated tar file> <image name>
+					//docker save -o <path for generated tar file> <existing image name>
 					sh "docker save -o target/${artifactName}-${releasedVersion}.tar ${artifactName}:${releasedVersion}"
+					echo "Copying tar file..."
+					sh "cp -rf target/${artifactName}-${releasedVersion}.tar ${distroDirPath}"
 				}
 
-				dir('demandplannerapi'){
-					echo "Copying tar file..."
-					sh "cp -rf target/${artifactName}-${releasedVersion}.tar ${workspacePath}/distro"
-				}
-				
-				dir ('distro') {
+				dir (distroDirPath) {
 					sh "git pull origin master"
 					sh "git add ${artifactName}-${releasedVersion}.tar"
 					sh 'git commit -m "Jenkins Job:${JOB_NAME} pushing image tar file" '
