@@ -63,12 +63,13 @@ node {
 		//This stage installs all of the node dependencies, performs linting and builds the code.
 		stage('NPM Build') {
 			//npm install -g npm@4.0.3 @angular/cli@1.0.4
+            // TODO: //ng lint Update her about ng lint
 			dir('demandplannerui') { sh '''
 					node --version
 					npm --version
 					npm install -g @angular/cli@~1.7.3
 					npm install
-					ng lint
+					
 					ng build --prod --no-sourcemaps
 				''' }
 			// ng serve --port 4200
