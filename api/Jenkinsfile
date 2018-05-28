@@ -59,7 +59,7 @@ node {
 		}
 
 		stage ('Maven Build') {
-			dir('demandplannerapi') { sh "mvn -Dmaven.test.failure.ignore clean package" }
+			dir('demandplannerapi') { sh "mvn clean install -Dmaven.test.skip=true" }
 		}
 
 		stage ('Junit Test') { dir('demandplannerapi') {sh "mvn test" }}
@@ -88,14 +88,14 @@ node {
 
 		stage('Docker Build'){
 			try {
-				sh 'sudo docker rmi -f $(docker images -f "dangling=true" -q)'
+				sh 'docker rmi -f $(docker images -f "dangling=true" -q)'
 			} catch (err) {
 				echo "Trying to remove dangling Images: ${err}"
 			}
 
 
 			try {
-				sh 'sudo docker rmi -f $(docker images | grep ${artifactName} | awk \"{print $3}\")'
+				sh 'docker rmi -f $(docker images | grep ${artifactName} | awk \"{print $3}\")'
 			} catch (err) {
 				echo "Trying remove ${artifactName}: ${err}"
 			}
@@ -111,9 +111,10 @@ node {
 			sshagent (credentials: ['git-repo-ssh-access']) {
 
 				dir ('demandplannerapi') {
-					sh 'sudo docker save -o target/productplannerapi.tar ${artifactName}'
+					//docker save -o <path for generated tar file> <image name>
+					sh "docker save -o ${artifactName}.tar ${artifactName}"
 					echo "Copy Process Started..."
-					sh "cp -rf target/productplannerapi.tar ${workspacePath}/distro"
+					sh "cp -rf ${artifactName}.tar ${workspacePath}/distro"
 				}
 
 
