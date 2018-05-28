@@ -150,8 +150,8 @@ node {
 					returnStdout: true
 					).trim()
 			sh "docker stop ${containerId}"
+			//sh "docker inspect -f '{{.State.ExitCode}}' ${containerId}"
 			sh "docker rm -f ${containerId}"
-			sh "docker inspect -f '{{.State.ExitCode}}' ${containerId}"
 			sh "docker run -e 'SPRING_PROFILES_ACTIVE=${PROP_ENV}' -d -p 8099:8090 --name  ${artifactName} -t ${artifactName}:${releasedVersion}"
 		}
 
