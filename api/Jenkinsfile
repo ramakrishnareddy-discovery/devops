@@ -25,7 +25,7 @@ node {
 		env.PATH = "${mvnHome}/bin:${env.PATH}"
 		def apiRepoUrl = 'ssh://git@innersource.accenture.com/appq/demandplannerapi.git' 
 		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro.git'
-		def distroDirPath = "/tmp/jenkins/distro"
+		def distroDirPath = "/tmp/jenkins"
 		// =========== USER DEFINED VARS ===========
 
 		stage('Git Checkout') {
@@ -45,12 +45,12 @@ node {
 				//sh "sudo mkdir -p ${distroDirPath}"
 
 				dir(distroDirPath){
-					/*
+					
 					git branch: '${GIT_BRANCH}',
 					credentialsId: 'git-repo-ssh-access',
 					url: 'ssh://git@innersource.accenture.com/appq/distro.git'
-					*/
-					sh "git clone -b ${DISTRO_GIT_BRANCH} ${distroRepoUrl} ${distroDirPath}"
+					
+					//sh "git clone -b ${DISTRO_GIT_BRANCH} ${distroRepoUrl} ${distroDirPath}"
 				}
 			}
 			else {
