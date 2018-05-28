@@ -6,7 +6,7 @@ node {
 			[$class: 'LogRotator', numToKeepStr: '3']],
 		disableConcurrentBuilds(),
 		parameters([
-			choice(choices: ["develop", "master"].join("\n"), description: 'Branch Name', name: 'GIT_BRANCH'),
+			choice(choices: ["master"].join("\n"), description: 'Branch Name', name: 'GIT_BRANCH'),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, 	description: 'Tagging required or not')
 		]),
 		pipelineTriggers([
@@ -20,6 +20,7 @@ node {
 		// =========== USER DEFINED VARS ===========
 		def workspacePath = pwd()
 		def mvnHome = tool name: "Maven_V3"
+		env.PATH = "${mvnHome}/bin:${env.PATH}"
 		def COMMON_REPO_URL = "ssh://git@innersource.accenture.com/appq/common.git"
 		// =========== USER DEFINED VARS ===========
 
@@ -34,14 +35,14 @@ node {
 		}
 
 		stage ('Maven Build') {
-			dir('common') { sh "'${mvnHome}/bin/mvn' clean install -Dmaven.test.skip=true" }
+			dir('common') { sh "mvn clean install -Dmaven.test.skip=true" }
 		}
 
 		stage('SonarQube Analysis') {
 			dir('common') {
 				withSonarQubeEnv('SonarQube_V7') {
 					// SonarQube taskId is automatically attached to the pipeline context
-					sh "'${mvnHome}/bin/mvn' org.sonarsource.scanner.maven:sonar-maven-plugin:3.3.0.603:sonar"
+					sh "mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.3.0.603:sonar"
 				}
 			}
 		}
@@ -83,7 +84,6 @@ node {
 }
 
 def getReleasedVersion() {
- //return (readFile('pom.xml') = ~'<version>(.+)-SNAPSHOT</version>')[0][1]
 	def matcher = readFile('common/pom.xml') =~ '<version>(.+?)</version>'
     matcher ? matcher[0][1] : null 	
 }
