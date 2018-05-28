@@ -7,7 +7,7 @@ node {
 		disableConcurrentBuilds(),
 		parameters([
 			choice(choices: ["master","develop"].join("\n"), description: 'API Branch Name', name: 'API_GIT_BRANCH'),
-			choice(choices: ["master","develop"].join("\n"), description: 'Distro Branch Name', name: 'DISTRO_GIT_BRANCH')
+			choice(choices: ["master","develop"].join("\n"), description: 'Distro Branch Name', name: 'DISTRO_GIT_BRANCH'),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not'),
 			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Image store required or not')
 		]),
