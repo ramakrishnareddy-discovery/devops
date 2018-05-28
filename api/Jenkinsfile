@@ -6,8 +6,8 @@ node {
 			[$class: 'LogRotator', numToKeepStr: '3']],
 		disableConcurrentBuilds(),
 		parameters([
-			choice(choices: ["master","develop"].join("\n"), description: 'API Branch Name', name: 'API_GIT_BRANCH'),
-			choice(choices: ["master","develop"].join("\n"), description: 'Distro Branch Name', name: 'DISTRO_GIT_BRANCH'),
+			choice(choices: ["master", "develop"].join("\n"), description: 'API Branch Name', name: 'API_GIT_BRANCH'),
+			choice(choices: ["master", "develop"].join("\n"), description: 'Distro Branch Name', name: 'DISTRO_GIT_BRANCH'),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not'),
 			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Image store required or not')
 		]),
@@ -66,10 +66,8 @@ node {
 
 		stage('SonarQube Analysis') {
 			dir('demandplannerapi') {
-				withSonarQubeEnv('SonarQube_V7') {
-					// SonarQube taskId is automatically attached to the pipeline context
-					sh "mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.3.0.603:sonar"
-				}
+				withSonarQubeEnv('SonarQube_V7') { // SonarQube taskId is automatically attached to the pipeline context
+					sh "mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.3.0.603:sonar" }
 			}
 		}
 
@@ -146,23 +144,17 @@ node {
 				}
 			}
 		}
-	} else {
-
+	}catch (Error) {
+		println Error
 	}
-
-
-}
-catch (Error) {
-	println Error
-}
 }
 
 def getReleasedVersion() {
-def matcher = readFile('common/pom.xml') =~ '<version>(.+?)</version>'
-matcher ? matcher[0][1] : null
+	def matcher = readFile('common/pom.xml') =~ '<version>(.+?)</version>'
+	matcher ? matcher[0][1] : null
 }
 
 def getArtifact() {
-def matcher = readFile('common/pom.xml') =~ '<artifactId>(.+?)</artifactId>'
-matcher ? matcher[0][1] : null
+	def matcher = readFile('common/pom.xml') =~ '<artifactId>(.+?)</artifactId>'
+	matcher ? matcher[0][1] : null
 }
