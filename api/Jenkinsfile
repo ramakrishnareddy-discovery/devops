@@ -39,10 +39,11 @@ node {
 			if(!fileExists(distroDirPath))
 			{
 				echo "${distroDirPath} doesn't exist.Continue cloning ..."
-				git branch: '${GIT_BRANCH}',
-				credentialsId: 'git-repo-ssh-access',
-				url: 'ssh://git@innersource.accenture.com/appq/distro.git'
-				
+				dir(distroDirPath){
+					git branch: '${GIT_BRANCH}',
+					credentialsId: 'git-repo-ssh-access',
+					url: 'ssh://git@innersource.accenture.com/appq/distro.git'
+				}
 			}
 			else {
 					echo "${distroDirPath} is already exist.Continue updating ..."
