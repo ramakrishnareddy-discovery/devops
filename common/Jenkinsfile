@@ -70,7 +70,6 @@ node {
 				def releasedVersion = getReleasedVersion()
 				sshagent (credentials: ['git-repo-ssh-access']) {
 						dir('common') {
-							//archiveArtifacts '/*.*'
 							sh "ls -l"
 							sh "git remote set-url origin ${COMMON_REPO_URL}"
 							//sh "git tag ${IMAGE_BRANCH_PREFIX}-${BUILD_NUMBER}"
