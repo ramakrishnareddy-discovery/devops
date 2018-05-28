@@ -83,6 +83,8 @@ node {
 }
 
 def getReleasedVersion() {
- return (readFile('pom.xml') = ~'<version>(.+)-SNAPSHOT</version>')[0][1]
+ //return (readFile('pom.xml') = ~'<version>(.+)-SNAPSHOT</version>')[0][1]
+	def matcher = readFile('pom.xml') =~ '<version>(.+?)</version>'
+    matcher ? matcher[0][1] : null
 }
 
