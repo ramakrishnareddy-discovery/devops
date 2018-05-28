@@ -20,7 +20,7 @@ node {
 		// =========== USER DEFINED VARS ===========
 		def workspacePath = pwd()
 		def mvnHome = tool name: "Maven_V3"
-		def commonRepoUrl = 'ssh://git@innersource.accenture.com/appq/common.git' 
+		def COMMON_REPO_URL = "ssh://git@innersource.accenture.com/appq/common.git"
 		// =========== USER DEFINED VARS ===========
 
 		stage('Git Checkout') {
@@ -29,7 +29,7 @@ node {
 			dir('common') {
 				git branch: '${GIT_BRANCH}',
 				credentialsId: 'git-repo-ssh-access',
-				url: ${commonRepoUrl}
+				url: '${COMMON_REPO_URL}'
 			}
 		}
 
@@ -68,7 +68,7 @@ node {
 						dir('common') {
 							//archiveArtifacts '/*.*'
 							sh "ls -l"
-							sh "git remote set-url origin ${commonRepoUrl}"
+							sh "git remote set-url origin ${COMMON_REPO_URL}"
 							//sh "git tag ${IMAGE_BRANCH_PREFIX}-${BUILD_NUMBER}"
 							sh "git tag ${releasedVersion}-${BUILD_NUMBER}"
 							sh "git push --tags"
