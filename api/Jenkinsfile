@@ -109,7 +109,7 @@ node {
 			echo "Docker Image Creation Complted..."
 		}
 
-		/*if (GIT_IMAGE_PUSH.toBoolean()) {
+		if (GIT_IMAGE_PUSH.toBoolean()) {
 			sshagent (credentials: ['git-repo-ssh-access']) {
 
 				dir ('demandplannerapi') {
@@ -145,7 +145,7 @@ node {
 					}
 				}
 			}
-		}*/
+		}
 	} else {
 
 	}
