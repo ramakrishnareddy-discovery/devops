@@ -40,7 +40,7 @@ node {
 			
 			if(!fileExists(distroDirPath))
 			{
-				echo "whoami"
+				sh "whoami"
 				echo "${distroDirPath} doesn't exist.Continue cloning ..."
 				sh "sudo mkdir -p ${distroDirPath}"
 
