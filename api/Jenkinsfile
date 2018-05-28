@@ -8,7 +8,9 @@ node {
 		parameters([
 			choice(choices: ["master", "develop"].join("\n"), description: 'API Branch Name', name: 'API_GIT_BRANCH'),
 			choice(choices: ["master", "develop"].join("\n"), description: 'Distro Branch Name', name: 'DISTRO_GIT_BRANCH'),
+			choice(choices: ["dev", "qa"].join("\n"), description: 'Properties Environment', name: 'PROP_ENV'),
 			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Image store required or not'),
+			
 			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not'),
 		]),
 		pipelineTriggers([
@@ -143,7 +145,10 @@ node {
 
 		stage('deploy'){
 			sh "docker ps"
-
+			sh 'docker ps --no-trunc -aqf "name=${artifactName}"'
+			sh "docker run -e "SPRING_PROFILES_ACTIVE=${PROP_ENV}" -d -p 8099:8090 --name  ${artifactName} -t ${artifactName}:${releasedVersion}"
+			//$ docker run -e "SPRING_PROFILES_ACTIVE=prod" -p 8080:8080 -t springio/gs-spring-boot-docker
+			//$ docker run -e "SPRING_PROFILES_ACTIVE=dev" -p 8080:8080 -t springio/gs-spring-boot-docker
 		}
 
 
