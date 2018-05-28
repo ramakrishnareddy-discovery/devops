@@ -51,7 +51,9 @@ node {
 			}
 			else {
 					echo "${distroDirPath} is already exist.Continue updating ..."
-					dir(distroDirPath) { sh "git pull origin HEAD:master" }	
+					sshagent (credentials: ['git-repo-ssh-access']) {
+						dir(distroDirPath) { sh "git pull origin HEAD:master" }	
+					}
 			}
 		}
 
