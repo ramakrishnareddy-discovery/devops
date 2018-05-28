@@ -102,6 +102,7 @@ node {
 				withSonarQubeEnv('SonarQube_V7') {
 					sh 'ls -l'
 					sh "${sonarqubeScannerHome}/bin/sonar-scanner"+
+                            " -Dsonar.projectKey=demandplannerui"+
 							" -Dsonar.sources=src" +
 							" -Dsonar.exclusions=**/node_modules/**,**/*.spec.ts" +
 							" -Dsonar.tests=src" +
