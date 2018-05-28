@@ -65,15 +65,16 @@ node {
 			//npm install -g npm@4.0.3 @angular/cli@1.0.4
             // TODO: //ng lint Update her about ng lint
             try {
-                dir('demandplannerui') { sh '''
+                dir('demandplannerui') { 
+                    sh '''
                         node --version
                         npm --version
                         npm install -g @angular/cli@~1.7.3
                         npm install
                         ng lint
                         ng build --prod --no-sourcemaps
-                    ''' }
-            catch (err) {
+                    ''' 
+            }catch (err) {
 					echo "NPM Build Stage Caught: ${err}"
 			}
 			// ng serve --port 4200
