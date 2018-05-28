@@ -36,7 +36,7 @@ node {
 			deleteDir()
 			echo "Checkout in progress..."
 			dir('demandplannerui') {
-				git branch: '${GIT_BRANCH}',
+				git branch: '${UI_GIT_BRANCH}',
 				credentialsId: 'git-repo-ssh-access',
 				url: "${uiRepoUrl}"
 			}
