@@ -4,7 +4,7 @@ node {
 	properties([
 		[$class: 'BuildDiscarderProperty', strategy:
 			[$class: 'LogRotator', numToKeepStr: '3']],
-		disableConcurrentBuilds()
+		disableConcurrentBuilds(),
 		parameters([
 			choice(choices: ["master", "develop", "feature/pipeline"].join("\n"), description: 'Branch Name', name: 'GIT_BRANCH'),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, 	description: 'Tagging required or not')
@@ -60,20 +60,22 @@ node {
 			}
 		}
 
-	
-		stage('Tag Branch'){
-			def releasedVersion = getReleasedVersion()
-			sshagent (credentials: ['git-repo-ssh-access']) {
-					dir('common') {
-						//archiveArtifacts '/*.*'
-						sh "ls -l"
-						sh "git remote set-url origin ${commonRepoUrl}"
-						//sh "git tag ${IMAGE_BRANCH_PREFIX}-${BUILD_NUMBER}"
-						sh "git tag ${releasedVersion}-${BUILD_NUMBER}"
-						sh "git push --tags"
-					}
-			}
-		}
+
+		if (GIT_TAG.toBoolean()) {
+			stage('Tag Branch'){
+				def releasedVersion = getReleasedVersion()
+				sshagent (credentials: ['git-repo-ssh-access']) {
+						dir('common') {
+							//archiveArtifacts '/*.*'
+							sh "ls -l"
+							sh "git remote set-url origin ${commonRepoUrl}"
+							//sh "git tag ${IMAGE_BRANCH_PREFIX}-${BUILD_NUMBER}"
+							sh "git tag ${releasedVersion}-${BUILD_NUMBER}"
+							sh "git push --tags"
+						}
+				}
+		    }
+		}	
 	}
 	catch (Error) {
 		println Error
