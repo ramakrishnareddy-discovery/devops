@@ -6,7 +6,7 @@ node {
 			[$class: 'LogRotator', numToKeepStr: '3']],
 		disableConcurrentBuilds(),
 		parameters([
-			choice(choices: ["master", "develop"].join("\n"), description: 'API Branch Name', name: 'UI_GIT_BRANCH'),
+			choice(choices: ["develop", "master"].join("\n"), description: 'API Branch Name', name: 'UI_GIT_BRANCH'),
 			choice(choices: ["master", "develop"].join("\n"), description: 'Distro Branch Name', name: 'DISTRO_GIT_BRANCH'),
 			choice(choices: ["dev", "qa"].join("\n"), description: 'Properties Environment', name: 'PROP_ENV'),
 			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Image store required or not'),
@@ -64,14 +64,18 @@ node {
 		stage('NPM Build') {
 			//npm install -g npm@4.0.3 @angular/cli@1.0.4
             // TODO: //ng lint Update her about ng lint
-			dir('demandplannerui') { sh '''
-					node --version
-					npm --version
-					npm install -g @angular/cli@~1.7.3
-					npm install
-					
-					ng build --prod --no-sourcemaps
-				''' }
+            try {
+                dir('demandplannerui') { sh '''
+                        node --version
+                        npm --version
+                        npm install -g @angular/cli@~1.7.3
+                        npm install
+                        ng lint
+                        ng build --prod --no-sourcemaps
+                    ''' }
+            catch (err) {
+					echo "NPM Build Stage Caught: ${err}"
+			}
 			// ng serve --port 4200
 			// npm start
 		}
@@ -83,7 +87,7 @@ node {
 			dir('demandplannerui') {
 
 				try {sh 'npm test' }catch (err) {
-					echo "Caught: ${err}"
+					echo " NPM Test Stage Caught: ${err}"
 				}}
 		}
 
