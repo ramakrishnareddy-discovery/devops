@@ -6,7 +6,8 @@ node {
 			[$class: 'LogRotator', numToKeepStr: '3']],
 		disableConcurrentBuilds(),
 		parameters([
-			choice(choices: ["master","develop"].join("\n"), description: 'Branch Name', name: 'GIT_BRANCH'),
+			choice(choices: ["master","develop"].join("\n"), description: 'API Branch Name', name: 'API_GIT_BRANCH'),
+			choice(choices: ["master","develop"].join("\n"), description: 'Distro Branch Name', name: 'DISTRO_GIT_BRANCH')
 			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not'),
 			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Image store required or not')
 		]),
@@ -22,7 +23,8 @@ node {
 		def workspacePath = pwd()
 		def mvnHome = tool name: "Maven_V3"
 		env.PATH = "${mvnHome}/bin:${env.PATH}"
-		def apiUrl = 'ssh://git@innersource.accenture.com/appq/demandplannerapi.git' 
+		def apiRepoUrl = 'ssh://git@innersource.accenture.com/appq/demandplannerapi.git' 
+		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro.git'
 		def distroDirPath = "/product/jenkins/distro"
 		// =========== USER DEFINED VARS ===========
 
@@ -30,7 +32,7 @@ node {
 			deleteDir()
 			echo "Checkout in progress..."
 			dir('demandplannerapi') {
-				git branch: '${GIT_BRANCH}',
+				git branch: '${API_GIT_BRANCH}',
 				credentialsId: 'git-repo-ssh-access',
 				url: 'ssh://git@innersource.accenture.com/appq/demandplannerapi.git'
 			}
@@ -39,10 +41,15 @@ node {
 			if(!fileExists(distroDirPath))
 			{
 				echo "${distroDirPath} doesn't exist.Continue cloning ..."
+				sh "mkdir -p ${distroDirPath}"
+
 				dir(distroDirPath){
+					/*
 					git branch: '${GIT_BRANCH}',
 					credentialsId: 'git-repo-ssh-access',
 					url: 'ssh://git@innersource.accenture.com/appq/distro.git'
+					*/
+					sh "git clone -b ${DISTRO_GIT_BRANCH} ${distroRepoUrl} ${distroDirPath}"
 				}
 			}
 			else {
