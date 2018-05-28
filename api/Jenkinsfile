@@ -88,21 +88,21 @@ node {
 			}
 		}
 
-		stage('Docker Build'){
+		stage('Docker Clean'){
 			try {
 				sh 'docker rmi -f $(docker images -f "dangling=true" -q)'
 			} catch (err) {
 				echo "Trying to remove dangling Images: ${err}"
 			}
 
-			/*	
-				try {
-					sh 'docker rmi -f $(docker images | grep ${artifactName} | awk \"{print $3}\")'
+			try {
+					sh "docker rmi -f $(docker images | grep ${artifactName} | awk \'{print $3}\')"
 				} catch (err) {
 					echo "Trying remove ${artifactName}: ${err}"
-				}
-			*/
+			}
+		}
 
+		stage('Docker Build'){
 			dir('demandplannerapi') {
 				echo "Starting Docker Image Creation..."
 				sh "mvn docker:build"

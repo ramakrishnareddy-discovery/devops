@@ -93,7 +93,6 @@ node {
 				}}
 		}
 
-
 		stage('SonarQube Analysis') {
 			dir('demandplannerui') {
 				withSonarQubeEnv('SonarQube_V7') { // SonarQube taskId is automatically attached to the pipeline context
