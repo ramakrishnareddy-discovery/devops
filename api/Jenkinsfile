@@ -37,7 +37,7 @@ node {
 			dir('demandplannerapi') {
 				git branch: '${API_GIT_BRANCH}',
 				credentialsId: 'git-repo-ssh-access',
-				url: 'ssh://git@innersource.accenture.com/appq/demandplannerapi.git'
+				url: "${apiRepoUrl}"
 			}
 
 			// Check for directory
@@ -49,7 +49,7 @@ node {
 				dir(distroDirPath){
 					git branch: '${DISTRO_GIT_BRANCH}',
 					credentialsId: 'git-repo-ssh-access',
-					url: 'ssh://git@innersource.accenture.com/appq/distro.git'
+					url: "${distroRepoUrl}"
 				}
 			}
 			else {

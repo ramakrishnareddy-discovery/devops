@@ -30,7 +30,7 @@ node {
 			dir('common') {
 				git branch: '${GIT_BRANCH}',
 				credentialsId: 'git-repo-ssh-access',
-				url: 'ssh://git@innersource.accenture.com/appq/common.git'
+				url: "${commonRepoUrl}"
 			}
 		}
 
