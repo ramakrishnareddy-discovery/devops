@@ -1,0 +1,141 @@
+#!/usr/bin/env groovy
+
+node {
+	properties([
+		[$class: 'BuildDiscarderProperty', strategy:
+			[$class: 'LogRotator', numToKeepStr: '3']],
+		disableConcurrentBuilds(),
+		parameters([
+			choice(choices: ["master", "develop"].join("\n"), description: 'API Branch Name', name: 'UI_GIT_BRANCH'),
+			choice(choices: ["master", "develop"].join("\n"), description: 'Distro Branch Name', name: 'DISTRO_GIT_BRANCH'),
+			choice(choices: ["dev", "qa"].join("\n"), description: 'Properties Environment', name: 'PROP_ENV'),
+			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Image store required or not'),
+			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not')
+		]),
+		pipelineTriggers([
+			//pollSCM('H/15 * * * *'),
+			//pollSCM('* * * * *'),
+			//cron('@daily')
+		])
+	])
+
+
+	try {
+		// =========== USER DEFINED VARS ===========
+		def workspacePath = pwd()
+		def nodeHome = tool 'NodeJS_V8'
+		env.PATH="${env.PATH}:${nodeHome}/bin"
+		def mvnHome = tool name: "Maven_V3"
+		env.PATH = "${mvnHome}/bin:${env.PATH}"
+		def uiRepoUrl = 'ssh://git@innersource.accenture.com/appq/demandplannerui.git'
+		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro.git'
+		def distroDirPath = "/tmp/jenkins/distro"
+		// =========== USER DEFINED VARS ===========
+
+		stage('Git Checkout') {
+			deleteDir()
+			echo "Checkout in progress..."
+			dir('demandplannerui') {
+				git branch: '${GIT_BRANCH}',
+				credentialsId: 'git-repo-ssh-access',
+				url: "${uiRepoUrl}"
+			}
+
+			// Check for directory
+			if(!fileExists(distroDirPath))
+			{
+				echo "${distroDirPath} doesn't exist.Continue cloning ..."
+
+				dir(distroDirPath){
+					git branch: '${DISTRO_GIT_BRANCH}',
+					credentialsId: 'git-repo-ssh-access',
+					url: "${distroRepoUrl}"
+				}
+			}
+			else {
+				echo "${distroDirPath} is already exist.Continue updating ..."
+				sshagent (credentials: ['git-repo-ssh-access']) {
+					dir(distroDirPath) { sh "git pull origin HEAD:master" }
+				}
+			}
+		}
+
+		//This stage installs all of the node dependencies, performs linting and builds the code.
+		stage('NPM Build') {
+			//npm install -g npm@4.0.3 @angular/cli@1.0.4
+			dir('demandplannerui') { sh '''
+					node --version
+					npm --version
+					npm install -g @angular/cli@~1.7.3
+					npm install
+					ng lint
+					ng build --prod --no-sourcemaps
+				''' }
+			// ng serve --port 4200
+			// npm start
+		}
+
+
+
+		// TODO: skipping testign as of now
+		stage ('NPM Test') {
+			dir('demandplannerui') {
+
+				try {sh 'npm test' }catch (err) {
+					echo "Caught: ${err}"
+				}}
+		}
+
+
+		stage('SonarQube Analysis') {
+			dir('demandplannerapi') {
+				withSonarQubeEnv('SonarQube_V7') { // SonarQube taskId is automatically attached to the pipeline context
+					sh "mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.3.0.603:sonar" }
+			}
+		}
+
+		// Configure a webhook in your SonarQube server pointing to <your Jenkins instance>/sonarqube-webhook/
+		stage("SonarQube Quality Gate") {
+			// Just in case something goes wrong, pipeline will be killed after a timeout
+			timeout(time: 2, unit: 'MINUTES') {
+				def qualityGate = waitForQualityGate() // Reuse taskId previously collected by withSonarQubeEnv
+				if (qualityGate.status != 'OK') {
+					//error "Pipeline aborted due to quality gate failure: ${qualityGate.status}"
+					println("SonarQube Quality Gate Failed.failure: ${qualityGate.status}")
+				} else
+				{
+					println("SonarQube Quality Gate Passed")
+				}
+			}
+		}
+		/*
+		 stage ('Test_Lint') {
+		 dir('demandplannerui') {
+		 echo "Starting Gulp Lint test..."
+		 try {sh "gulp lint" }catch (err) {
+		 echo "Caught: ${err}"
+		 }}
+		 echo "Gulp Lint test executed!"
+		 }
+		 stage ('Mocha Unit & Coverage') {
+		 dir('demandplannerui') {
+		 echo "Starting Gulp Mocha test..."
+		 try {sh "gulp coverage" }catch (err) {
+		 echo "Caught: ${err}"
+		 }}
+		 echo "Gulp Mocha test executed!"
+		 }
+		 stage ('Security Source Scanner') {
+		 dir('demandplannerui') {
+		 echo "Starting Gulp Security test..."
+		 try {sh "gulp security" }catch (err) {
+		 echo "Caught: ${err}"
+		 }}
+		 echo "Gulp Security test executed!"
+		 }
+		 */
+
+	}catch (Error) {
+		println Error
+	}
+}
