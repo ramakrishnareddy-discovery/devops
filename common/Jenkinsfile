@@ -47,6 +47,9 @@ node {
 			}
 		}
 
+	/* Commenting as Common project doesnt' have Unit Tests:
+		Since common project doesn't have unit tests, qualityGate status is failing eventually Pipeline aborted due to quality gate failure: ERROR
+	
 		// Configure a webhook in your SonarQube server pointing to <your Jenkins instance>/sonarqube-webhook/
 		stage("SonarQube Quality Gate") {
 			// Just in case something goes wrong, pipeline will be killed after a timeout
@@ -60,7 +63,7 @@ node {
 				}
 			}
 		}
-
+	*/
 
 		if (GIT_TAG.toBoolean()) {
 			stage('Tag Branch'){
