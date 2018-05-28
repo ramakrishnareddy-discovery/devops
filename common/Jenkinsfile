@@ -1,0 +1,86 @@
+#!/usr/bin/env groovy
+
+node {
+	properties([
+		[$class: 'BuildDiscarderProperty', strategy:
+			[$class: 'LogRotator', numToKeepStr: '3']],
+		disableConcurrentBuilds()
+		parameters([
+			choice(choices: ["master", "develop", "feature/pipeline"].join("\n"), description: 'Branch Name', name: 'GIT_BRANCH'),
+			booleanParam(name: 'GIT_TAG', defaultValue: false, 	description: 'Tagging required or not')
+		]),
+		pipelineTriggers([
+			//pollSCM('H/15 * * * *'),
+			//pollSCM('* * * * *'),
+			//cron('@daily')
+		])
+	])
+
+	try {
+		// =========== USER DEFINED VARS ===========
+		def workspacePath = pwd()
+		def mvnHome = tool name: "Maven_V3"
+		def commonRepoUrl = 'ssh://git@innersource.accenture.com/appq/common.git' 
+		// =========== USER DEFINED VARS ===========
+
+		stage('Git Checkout') {
+			deleteDir()
+			echo "Checkout in progress..."
+			dir('common') {
+				git branch: '${GIT_BRANCH}',
+				credentialsId: 'git-repo-ssh-access',
+				url: '${commonRepoUrl}'
+			}
+		}
+
+		stage ('Maven Build') {
+			dir('common') { sh "'${mvnHome}/bin/mvn' clean install -Dmaven.test.skip=true" }
+		}
+
+		stage('SonarQube Analysis') {
+			dir('common') {
+				withSonarQubeEnv('SonarQube_V7') {
+					// SonarQube taskId is automatically attached to the pipeline context
+					sh "'${mvnHome}/bin/mvn' org.sonarsource.scanner.maven:sonar-maven-plugin:3.3.0.603:sonar"
+				}
+			}
+		}
+
+		// Configure a webhook in your SonarQube server pointing to <your Jenkins instance>/sonarqube-webhook/
+		stage("SonarQube Quality Gate") {
+			// Just in case something goes wrong, pipeline will be killed after a timeout
+			timeout(time: 2, unit: 'MINUTES') {
+				def qualityGate = waitForQualityGate() // Reuse taskId previously collected by withSonarQubeEnv
+				if (qualityGate.status != 'OK') {
+					error "Pipeline aborted due to quality gate failure: ${qualityGate.status}"
+				} else
+				{
+					println("SonarQube Quality Gate Passed")
+				}
+			}
+		}
+
+	
+		stage('Tag Branch'){
+			def releasedVersion = getReleasedVersion()
+			sshagent (credentials: ['git-repo-ssh-access']) {
+					dir('common') {
+						//archiveArtifacts '/*.*'
+						sh "ls -l"
+						sh "git remote set-url origin ${commonRepoUrl}"
+						//sh "git tag ${IMAGE_BRANCH_PREFIX}-${BUILD_NUMBER}"
+						sh "git tag ${releasedVersion}-${BUILD_NUMBER}"
+						sh "git push --tags"
+					}
+			}
+		}
+	}
+	catch (Error) {
+		println Error
+	}
+}
+
+def getReleasedVersion() {
+ return (readFile('pom.xml') = ~'<version>(.+)-SNAPSHOT</version>')[0][1]
+}
+
