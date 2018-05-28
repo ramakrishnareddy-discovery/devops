@@ -30,6 +30,7 @@ node {
 		def uiRepoUrl = 'ssh://git@innersource.accenture.com/appq/demandplannerui.git'
 		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro.git'
 		def distroDirPath = "/tmp/jenkins/distro"
+        def sonarqubeScannerHome = tool name: 'SonarQubeScanner_V3', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
 		// =========== USER DEFINED VARS ===========
 
 		stage('Git Checkout') {
