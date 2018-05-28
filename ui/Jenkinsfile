@@ -74,7 +74,7 @@ node {
                         ng lint
                         ng build --prod --no-sourcemaps
                     ''' 
-            }catch (err) {
+            }}catch (err) {
 					echo "NPM Build Stage Caught: ${err}"
 			}
 			// ng serve --port 4200
