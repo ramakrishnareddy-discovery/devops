@@ -94,18 +94,19 @@ node {
 				echo "Trying to remove dangling Images: ${err}"
 			}
 
-
-			try {
-				sh 'docker rmi -f $(docker images | grep ${artifactName} | awk \"{print $3}\")'
-			} catch (err) {
-				echo "Trying remove ${artifactName}: ${err}"
-			}
+			/*	
+				try {
+					sh 'docker rmi -f $(docker images | grep ${artifactName} | awk \"{print $3}\")'
+				} catch (err) {
+					echo "Trying remove ${artifactName}: ${err}"
+				}
+			*/
 
 			dir('demandplannerapi') {
 				echo "Starting Docker Image Creation..."
 				sh "mvn docker:build"
+				echo "Docker Image Creation Complted..."
 			}
-			echo "Docker Image Creation Complted..."
 		}
 
 		if (GIT_IMAGE_PUSH.toBoolean()) {
@@ -139,6 +140,13 @@ node {
 				}
 			}
 		}
+
+		stage('deploy'){
+			sh "docker ps"
+
+		}
+
+
 	}catch (Error) {
 		println Error
 	}
