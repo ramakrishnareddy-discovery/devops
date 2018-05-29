@@ -155,7 +155,6 @@ node {
 				sh "docker stop ${containerId}"
 				sh "docker rm -f ${containerId}"
 			}
-			//sh "docker run -e 'SPRING_PROFILES_ACTIVE=${PROP_ENV}' -d -p 8099:8090 --name  ${artifactName} -t ${artifactName}:${releasedVersion}"
 			sh "docker run -e 'SPRING_PROFILES_ACTIVE=${PROP_ENV}' -d -p 8099:8090 --name  ${artifactName} -t ${artifactName}"
 		}
 
@@ -166,6 +165,7 @@ node {
 				echo "User that allowed merge: ${outcome}"
 				sh 'ls'
 			}
+			dir (distroDirPath) { sh "scp -Cpv ${artifactName}-${releasedVersion}.tar centos@10.0.31.30:/home/centos" }
 		}
 
 		stage('deploy to PROD'){
