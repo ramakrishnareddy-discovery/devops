@@ -164,11 +164,11 @@ node {
 		stage('deploy to QA'){
 			//versions = input message: 'Choose testload version!', ok: 'SET', parameters: [choice(name: 'TESTLOAD_VERSION', choices: "${version_collection}", description: '')]
 			timeout(60) { 
-			def outcome = input message: 'Merge trunk into branch?', ok: 'Merge'
+			def outcome = input message: 'Deploy to QA?', ok: 'Deploy'
 			echo "User that allowed merge: ${outcome.user}"
-
-			def feedback = input(submitterParameter: 'submitter', ...)
-			echo "It was ${feedback.submitter} who submitted the dialog."
+			sh 'ls'
+			//def feedback = input(submitterParameter: 'submitter')
+			//echo "It was ${feedback.submitter} who submitted the dialog."
 			}
 		}
 
