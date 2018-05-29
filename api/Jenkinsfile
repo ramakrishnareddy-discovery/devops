@@ -12,14 +12,12 @@ node {
 			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Image store required or not'),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not')
 		]),
-		
 		pipelineTriggers(
-			[upstream(threshold: hudson.model.Result.SUCCESS,upstreamProjects: "common")
+		[upstream(threshold: hudson.model.Result.SUCCESS,upstreamProjects: "common")
 			//pollSCM('H/15 * * * *'),
 			//pollSCM('* * * * *'),
 			//cron('@daily')
-			]
-		)
+		])
 	])
 
 	try {
@@ -99,9 +97,9 @@ node {
 			}
 
 			try {
-					sh 'docker rmi -f $(docker images | grep ${artifactName} | awk \"{print $3}\")'
-				} catch (err) {
-					echo "Trying remove ${artifactName}: ${err}"
+				sh 'docker rmi -f $(docker images | grep ${artifactName} | awk \"{print $3}\")'
+			} catch (err) {
+				echo "Trying remove ${artifactName}: ${err}"
 			}
 		}
 
@@ -163,12 +161,10 @@ node {
 
 		stage('deploy to QA'){
 			//versions = input message: 'Choose testload version!', ok: 'SET', parameters: [choice(name: 'TESTLOAD_VERSION', choices: "${version_collection}", description: '')]
-			timeout(60) { 
-			def outcome = input message: 'Deploy to QA?', ok: 'Deploy'
-			echo "User that allowed merge: ${outcome.user}"
-			sh 'ls'
-			//def feedback = input(submitterParameter: 'submitter')
-			//echo "It was ${feedback.submitter} who submitted the dialog."
+			timeout(activity: true, time: 20, unit: 'SECONDS') {
+				def outcome = input message: 'Deploy to QA?', ok: 'Deploy'
+				echo "User that allowed merge: ${outcome}"
+				sh 'ls'
 			}
 		}
 
