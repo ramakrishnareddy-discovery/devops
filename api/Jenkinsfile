@@ -161,11 +161,9 @@ node {
 		stage('deploy to QA'){
 			//versions = input message: 'Choose testload version!', ok: 'SET', parameters: [choice(name: 'TESTLOAD_VERSION', choices: "${version_collection}", description: '')]
 			timeout(activity: true, time: 20, unit: 'SECONDS') {
-				def outcome = input message: 'Deploy to QA?', ok: 'Deploy'
-				echo "User that allowed merge: ${outcome}"
-				sh 'ls'
+				input message: 'Deploy to QA?', ok: 'Deploy'
 			}
-			dir (distroDirPath) { sh "scp -Cpv ${artifactName}-${releasedVersion}.tar centos@10.0.31.30:/home/centos" }
+			dir (distroDirPath) { sh "scp -Cpv ${artifactName}-${releasedVersion}.tar centos@10.0.31.10:/home/centos" }
 		}
 
 		stage('deploy to PROD'){
