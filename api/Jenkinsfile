@@ -145,7 +145,7 @@ node {
 			}
 		}
 
-		stage('deploy'){
+		stage('deploy to DEV'){
 			sh "docker ps"
 			def  containerId = sh (
 					script: "docker ps --no-trunc -aqf 'name=${artifactName}'",
@@ -159,6 +159,16 @@ node {
 			}
 			//sh "docker run -e 'SPRING_PROFILES_ACTIVE=${PROP_ENV}' -d -p 8099:8090 --name  ${artifactName} -t ${artifactName}:${releasedVersion}"
 			sh "docker run -e 'SPRING_PROFILES_ACTIVE=${PROP_ENV}' -d -p 8099:8090 --name  ${artifactName} -t ${artifactName}"
+		}
+
+		stage('deploy to QA'){
+			//versions = input message: 'Choose testload version!', ok: 'SET', parameters: [choice(name: 'TESTLOAD_VERSION', choices: "${version_collection}", description: '')]
+			def outcome = input message: 'Merge trunk into branch?', ok: 'Merge'
+			echo "User that allowed merge: ${outcome.user}"
+		}
+
+		stage('deploy to PROD'){
+
 		}
 
 	}catch (Error) {
