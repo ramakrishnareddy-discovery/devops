@@ -25,12 +25,10 @@ node {
 		def workspacePath = pwd()
 		def nodeHome = tool 'NodeJS_V8'
 		env.PATH="${env.PATH}:${nodeHome}/bin"
-		def mvnHome = tool name: "Maven_V3"
-		env.PATH = "${mvnHome}/bin:${env.PATH}"
 		def uiRepoUrl = 'ssh://git@innersource.accenture.com/appq/demandplannerui.git'
 		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro.git'
 		def distroDirPath = "/tmp/jenkins/distro"
-        def sonarqubeScannerHome = tool name: 'SonarQubeScanner_V3', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+		def sonarqubeScannerHome = tool 'SonarQubeScanner_V3'
 		// =========== USER DEFINED VARS ===========
 
 		stage('Git Checkout') {
@@ -71,8 +69,7 @@ node {
                         npm --version
                         npm install -g npm@5.6.0 @angular/cli@~1.7.3
                         npm install
-                        ng lint
-                        ng build --prod --no-sourcemaps
+                        ng build --prod --no-sourcemaps --aot
                     '''  }}catch (err) {
 				echo "NPM Build Stage Caught: ${err}"
 			}
@@ -82,15 +79,15 @@ node {
 
 
 
-		// TODO: skipping testign as of now
+		// TODO: skipping testing as of now
 		// TODO: npm test make necessary changes.Launching browser ChromeHeadless
-		stage ('NPM Test') {
-			dir('demandplannerui') {
-
-				try {sh 'npm test' }catch (err) {
-					echo " NPM Test Stage Caught: ${err}"
-				}}
-		}
+		/*
+		 stage ('NPM Test') {
+		 dir('demandplannerui') {
+		 try {sh 'npm test' }catch (err) {
+		 echo " NPM Test Stage Caught: ${err}"
+		 }}
+		 }*/
 
 		/* TODO: parameterize project version
 		 * " -Dsonar.projectKey=demo:demandplannerui"+
@@ -102,7 +99,7 @@ node {
 				withSonarQubeEnv('SonarQube_V7') {
 					sh 'ls -l'
 					sh "${sonarqubeScannerHome}/bin/sonar-scanner"+
-                            " -Dsonar.projectKey=demandplannerui"+
+							" -Dsonar.projectKey=demandplannerui"+
 							" -Dsonar.sources=src" +
 							" -Dsonar.exclusions=**/node_modules/**,**/*.spec.ts" +
 							" -Dsonar.tests=src" +
@@ -128,33 +125,6 @@ node {
 				}
 			}
 		}
-		/*
-		 stage ('Test_Lint') {
-		 dir('demandplannerui') {
-		 echo "Starting Gulp Lint test..."
-		 try {sh "gulp lint" }catch (err) {
-		 echo "Caught: ${err}"
-		 }}
-		 echo "Gulp Lint test executed!"
-		 }
-		 stage ('Mocha Unit & Coverage') {
-		 dir('demandplannerui') {
-		 echo "Starting Gulp Mocha test..."
-		 try {sh "gulp coverage" }catch (err) {
-		 echo "Caught: ${err}"
-		 }}
-		 echo "Gulp Mocha test executed!"
-		 }
-		 stage ('Security Source Scanner') {
-		 dir('demandplannerui') {
-		 echo "Starting Gulp Security test..."
-		 try {sh "gulp security" }catch (err) {
-		 echo "Caught: ${err}"
-		 }}
-		 echo "Gulp Security test executed!"
-		 }
-		 */
-
 	}catch (Error) {
 		println Error
 	}
