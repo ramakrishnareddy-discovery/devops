@@ -144,21 +144,22 @@ node {
 						sh "git push origin HEAD:master"
 					}
 				}
-				
-					sh "docker images"
-					if (GIT_TAG.toBoolean()) {
-						stage('Tag Branch'){
-							dir('demandplannerapi') {
-								sh "ls -l"
-								sh "git remote set-url origin ${apiRepoUrl}"
-								//sh "git tag ${IMAGE_BRANCH_PREFIX}-${BUILD_NUMBER}"
-								sh "git tag ${releasedVersion}-${BUILD_NUMBER}"
-								sh "git push --tags"
-							}
-						}
-					}
-				
 		   }	
+		}
+		
+		if (GIT_TAG.toBoolean()) {
+			sshagent (credentials: ['git-repo-ssh-access']) {	
+				stage('Tag Branch'){
+					dir('demandplannerapi') {
+						sh "ls -l"
+						sh "git remote set-url origin ${apiRepoUrl}"
+						//sh "git tag ${IMAGE_BRANCH_PREFIX}-${BUILD_NUMBER}"
+						sh "git tag ${releasedVersion}-${BUILD_NUMBER}"
+						sh "git push --tags"
+					}
+				}
+			}
+			sh "docker images"
 		}
 
 		stage('deploy to DEV'){
