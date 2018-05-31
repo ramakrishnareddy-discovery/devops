@@ -29,6 +29,7 @@ node {
 		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro.git'
 		def distroDirPath = "/tmp/jenkins/distro"
 		def sonarqubeScannerHome = tool 'SonarQubeScanner_V3'
+		def artifactName = 'demandplannerui'
 		// =========== USER DEFINED VARS ===========
 
 		stage('Git Checkout') {
@@ -59,24 +60,25 @@ node {
 			}
 		}
 
-		//This stage installs all of the node dependencies, performs linting and builds the code.
-		stage('NPM Build') {
-			//npm install -g npm@4.0.3 @angular/cli@1.0.4
-			// TODO: //ng lint Update her about ng lint
-			try {
-				dir('demandplannerui') { sh '''
-                        node --version
-                        npm --version
-                        npm install -g npm@5.6.0 @angular/cli@~1.7.3
-                        npm install
-                        ng build --prod --no-sourcemaps --aot
-                    '''  }}catch (err) {
-				echo "NPM Build Stage Caught: ${err}"
-			}
-			// ng serve --port 4200
-			// npm start
-		}
-
+		/* As per other experiences, ng build in jenkins file doesn't work as expected. So moved to docker file
+		 //This stage installs all of the node dependencies, performs linting and builds the code.
+		 stage('NPM Build') {
+		 //npm install -g npm@4.0.3 @angular/cli@1.0.4
+		 // TODO: //ng lint Update her about ng lint
+		 try {
+		 dir('demandplannerui') { sh '''
+		 node --version
+		 npm --version
+		 npm install -g npm@5.6.0 @angular/cli@~1.7.3
+		 npm install
+		 ng build --prod --no-sourcemaps --aot
+		 '''  }}catch (err) {
+		 echo "NPM Build Stage Caught: ${err}"
+		 }
+		 // ng serve --port 4200
+		 // npm start
+		 }
+		 */
 
 
 		// TODO: skipping testing as of now
@@ -126,7 +128,28 @@ node {
 			}
 		}
 
-		
+		stage('Docker Clean'){
+			try {
+				sh 'docker rmi -f $(docker images -f "dangling=true" -q)'
+			} catch (err) {
+				echo "Trying to remove dangling Images: ${err}"
+			}
+
+			try {
+				sh 'docker rmi -f $(docker images | grep ${artifactName} | awk \"{print $3}\")'
+			} catch (err) {
+				echo "Trying remove ${artifactName}: ${err}"
+			}
+		}
+
+		stage('Docker Build'){
+			dir('demandplannerui') {
+				echo "Starting Docker Image Creation..."
+				sh "docker build -t ${artifactName} ."
+				echo "Docker Image Creation Complted..."
+			}
+		}
+
 	}catch (Error) {
 		println Error
 	}
