@@ -97,7 +97,12 @@ node {
 		 * " -Dsonar.projectKey=demo:demandplannerui"+
 		 * " -Dsonar.projectName=demandplannerui" +
 		 * " -Dsonar.projectVersion=V1" +
+		 *
+		 * add below line after "to include test"
+		 * 
 		 */
+		 // " -Dsonar.test.inclusions=**/*.spec.ts" +
+
 		stage('SonarQube Analysis') {
 			dir('demandplannerui') {
 				withSonarQubeEnv('SonarQube_V7') {
@@ -107,7 +112,6 @@ node {
 							" -Dsonar.sources=src" +
 							" -Dsonar.exclusions=**/node_modules/**,**/*.spec.ts" +
 							" -Dsonar.tests=src" +
-							" -Dsonar.test.inclusions=**/*.spec.ts" +
 							" -Dsonar.ts.tslintconfigpath=tslint.json" +
 							" -Dsonar.ts.lcov.reportpath=test-results/coverage/coverage.lcov" +
 							" -Dsonar.sourceEncoding=UTF-8"
