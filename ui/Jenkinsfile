@@ -195,6 +195,10 @@ node {
 			}
 			sh "docker images"
 		}
+
+		//docker ps -a -q --filter=ancestor=sonarqube | xargs -I {} docker stop {}
+		//docker ps -a -q --filter=ancestor=sonarqube | xargs -I {} docker rm {}  
+
 		stage('deploy to DEV'){
 			sh "docker ps"
 			def  containerId = sh (
@@ -210,7 +214,7 @@ node {
 
 			//docker run -it -p 8080:80 angular-sample-app
 			//sh "docker run -e 'SPRING_PROFILES_ACTIVE=${PROP_ENV}' -d -p 8099:8090 --name  ${artifactName} -t ${artifactName}"
-			sh "docker run -d -p 8098:80 --name  ${artifactName} ${artifactName}:${releasedVersion}"
+			sh "docker run -d -p 8098:80 --name  ${artifactName} ${artifactName}"
 		}
 
 
