@@ -171,7 +171,7 @@ node {
 			//def filePath = ${workspacePath}/
 
 			//ssh -i cenots@centos@10.0.31.10
-			sh "scp -iCpv ${distroDirPath}/${artifactName}-${releasedVersion}.tar centos@10.0.31.10/home/centos"
+			sh "scp -iCpv ${distroDirPath}/${artifactName}-${releasedVersion}.tar centos@10.0.31.10:/home/centos"
 			
 						// by default look for private key/identity file  @/var/lib/jenkins/.ssh
 			
