@@ -27,6 +27,7 @@ node {
 		env.PATH = "${mvnHome}/bin:${env.PATH}"
 		def apiRepoUrl = 'ssh://git@innersource.accenture.com/appq/demandplannerapi.git'
 		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro.git'
+		def devopsRepoUrl = 'ssh://git@innersource.accenture.com/appq/devops.git'
 		def distroDirPath = "/tmp/jenkins/distro"
 		def artifactName = getArtifact()
 		def releasedVersion = getReleasedVersion()
@@ -39,6 +40,12 @@ node {
 				git branch: '${API_GIT_BRANCH}',
 				credentialsId: 'git-repo-ssh-access',
 				url: "${apiRepoUrl}"
+			}
+
+			dir('devops') {
+				git branch: 'master',
+				credentialsId: 'git-repo-ssh-access',
+				url: "${devopsRepoUrl}"
 			}
 
 			// Check for directory
@@ -171,7 +178,7 @@ node {
 			//def filePath = ${workspacePath}/
 
 			//ssh -i cenots@centos@10.0.31.10
-			sh "scp -iCpv ${distroDirPath}/${artifactName}-${releasedVersion}.tar centos@10.0.31.10:/home/centos"
+			sh "scp -i ${workspacePath}/devops/artifacts/qcom-bang-key.pem Cpv ${distroDirPath}/${artifactName}-${releasedVersion}.tar centos@10.0.31.10:/home/centos"
 			
 						// by default look for private key/identity file  @/var/lib/jenkins/.ssh
 			
