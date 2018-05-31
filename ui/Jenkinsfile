@@ -112,6 +112,7 @@ node {
 							" -Dsonar.sources=src" +
 							" -Dsonar.exclusions=**/node_modules/**,**/*.spec.ts" +
 							" -Dsonar.tests=src" +
+							" -Dsonar.test.inclusions=**/*.spec.ts"
 							" -Dsonar.ts.tslintconfigpath=tslint.json" +
 							" -Dsonar.ts.lcov.reportpath=test-results/coverage/coverage.lcov" +
 							" -Dsonar.sourceEncoding=UTF-8"
