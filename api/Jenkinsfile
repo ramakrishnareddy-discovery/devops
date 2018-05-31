@@ -184,8 +184,8 @@ node {
 
 			//def filePath = ${workspacePath}/
 
-			//ssh -i cenots@centos@10.0.31.10
-			sh "scp -i ${workspacePath}/devops/artifacts/qcom-bang-key.pem Cpv ${distroDirPath}/${artifactName}-${releasedVersion}.tar centos@10.0.31.10:/home/centos"
+			//sh "ssh -i ${workspacePath}/devops/artifacts/qcom-bang-key.pem centos@10.0.31.10"
+			sh "scp -Cpv -i ${workspacePath}/devops/artifacts/qcom-bang-key  ${distroDirPath}/${artifactName}-${releasedVersion}.tar centos@10.0.31.10:/home/centos"
 			
 						// by default look for private key/identity file  @/var/lib/jenkins/.ssh
 			
