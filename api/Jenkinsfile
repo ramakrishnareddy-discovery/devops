@@ -168,8 +168,14 @@ node {
 				input message: 'Deploy to QA?', ok: 'Deploy'
 			}
 
-			// by default look for private key/identity file  @/var/lib/jenkins/.ssh
-			dir (distroDirPath) { sh "scp  -Cpv ${artifactName}-${releasedVersion}.tar centos@10.0.31.10:/home/centos" }
+			//def filePath = ${workspacePath}/
+
+			//ssh -i cenots@centos@10.0.31.10
+			sh "scp -iCpv ${distroDirPath}/${artifactName}-${releasedVersion}.tar centos@10.0.31.10/home/centos"
+			
+						// by default look for private key/identity file  @/var/lib/jenkins/.ssh
+			
+			//dir (distroDirPath) { sh "scp  -Cpv ${artifactName}-${releasedVersion}.tar centos@10.0.31.10:/home/centos" }
 			
 			//privae key here and pubcli key in /home/centos/
 			//ssh try to another box (from jenkins to another box) - where to place private and public key (ssh-agent other ways/sshdconfig)
