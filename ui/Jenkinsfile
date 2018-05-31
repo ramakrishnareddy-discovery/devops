@@ -30,6 +30,8 @@ node {
 		def distroDirPath = "/tmp/jenkins/distro"
 		def sonarqubeScannerHome = tool 'SonarQubeScanner_V3'
 		def artifactName = 'demandplannerui'
+		// TODO: dynamically fetch from package.json
+		def releasedVersion ='0.1'
 		// =========== USER DEFINED VARS ===========
 
 		stage('Git Checkout') {
@@ -145,10 +147,65 @@ node {
 		stage('Docker Build'){
 			dir('demandplannerui') {
 				echo "Starting Docker Image Creation..."
-				sh "docker build -t ${artifactName} ."
+				sh "docker build -t ${artifactName}:${releasedVersion} ."
 				echo "Docker Image Creation Complted..."
 			}
 		}
+
+		if (GIT_IMAGE_PUSH.toBoolean()) {
+			sshagent (credentials: ['git-repo-ssh-access']) {
+				//Save one or more images to a tar archive.
+				stage('Save Docker Image'){	
+					sh "docker images"
+					dir ('demandplannerui') {
+						//docker save -o <path for generated tar file> <existing image name>
+						sh "docker save -o target/${artifactName}-${releasedVersion}.tar ${artifactName}:${releasedVersion}"
+						echo "Copying tar file..."
+						sh "cp -rf target/${artifactName}-${releasedVersion}.tar ${distroDirPath}"
+					}
+
+					dir (distroDirPath) {
+						sh "git pull origin master"
+						sh "git add ${artifactName}-${releasedVersion}.tar"
+						sh 'git commit -m "Jenkins Job:${JOB_NAME} pushing image tar file"'
+						sh "git push origin HEAD:master"
+					}
+				}
+				
+					sh "docker images"
+					if (GIT_TAG.toBoolean()) {
+						stage('Tag Branch'){
+							dir('demandplannerui') {
+								sh "ls -l"
+								sh "git remote set-url origin ${uiRepoUrl}"
+								//sh "git tag ${IMAGE_BRANCH_PREFIX}-${BUILD_NUMBER}"
+								sh "git tag ${releasedVersion}-${BUILD_NUMBER}"
+								sh "git push --tags"
+							}
+						}
+					}
+		   }	
+		}
+
+		stage('deploy to DEV'){
+			sh "docker ps"
+			def  containerId = sh (
+					script: "docker ps --no-trunc -aqf 'name=${artifactName}'",
+					returnStdout: true
+					).trim()
+			echo "containerId: ${containerId}"
+
+			if (containerId != "") {
+				sh "docker stop ${containerId}"
+				sh "docker rm -f ${containerId}"
+			}
+
+			//docker run -it -p 8080:80 angular-sample-app
+			//sh "docker run -e 'SPRING_PROFILES_ACTIVE=${PROP_ENV}' -d -p 8099:8090 --name  ${artifactName} -t ${artifactName}"
+			sh "docker run -d -p 8098:80 --name  ${artifactName} -t ${artifactName}"
+		}
+
+
 
 	}catch (Error) {
 		println Error
