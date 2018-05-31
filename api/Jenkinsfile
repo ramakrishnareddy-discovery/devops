@@ -194,7 +194,8 @@ node {
 			//sh "ssh -i devops/artifacts/qcom-bang-key.ppk centos@ip-10-0-31-10.ec2.internal 'nohup sleep 300 >/dev/null 2>/dev/null </dev/null &'"
 			//sh "ssh -i devops/artifacts/qcom-bang-key.ppk centos@ip-10-0-31-10.ec2.internal;pwd"
 			dir('devops') {
-				sh "ssh -i artifacts/qcom-bang-key.ppk centos@10.0.31.10"
+				//sh "ssh -i artifacts/qcom-bang-key.ppk centos@10.0.31.10"
+				sh "ssh -i artifacts/qcom-bang-key.pub centos@10.0.31.10"
 			}
 			
 			//sh "scp -Cpv -i devops/artifacts/qcom-bang-key.ppk  ${distroDirPath}/${artifactName}-${releasedVersion}.tar centos@10.0.31.10:/home/centos"
