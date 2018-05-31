@@ -127,6 +127,7 @@ node {
 
 		if (GIT_IMAGE_PUSH.toBoolean()) {
 			sshagent (credentials: ['git-repo-ssh-access']) {
+				//Save one or more images to a tar archive.
 				stage('Save Docker Image'){	
 					sh "docker images"
 					dir ('demandplannerapi') {
@@ -142,7 +143,8 @@ node {
 						sh 'git commit -m "Jenkins Job:${JOB_NAME} pushing image tar file" '
 						sh "git push origin HEAD:master"
 					}
-
+				}
+				
 					sh "docker images"
 					if (GIT_TAG.toBoolean()) {
 						stage('Tag Branch'){
@@ -155,7 +157,7 @@ node {
 							}
 						}
 					}
-				}
+				
 		   }	
 		}
 
@@ -185,9 +187,11 @@ node {
 			}
 
 			//def filePath = ${workspacePath}/
-			sh "ssh -i devops/artifacts/qcom-bang-key.ppk centos@ip-10-0-31-10.ec2.internal 'nohup sleep 300 >/dev/null 2>/dev/null </dev/null &'"
+			//sh "ssh -i devops/artifacts/qcom-bang-key.ppk centos@ip-10-0-31-10.ec2.internal 'nohup sleep 300 >/dev/null 2>/dev/null </dev/null &'"
 			//sh "ssh -i devops/artifacts/qcom-bang-key.ppk centos@ip-10-0-31-10.ec2.internal;pwd"
-			//sh "ssh -i devops/artifacts/qcom-bang-key.ppk centos@10.0.31.10;pwd"
+			dir('devops') {
+				sh "ssh -i artifacts/qcom-bang-key.ppk centos@10.0.31.10"
+			}
 			
 			//sh "scp -Cpv -i devops/artifacts/qcom-bang-key.ppk  ${distroDirPath}/${artifactName}-${releasedVersion}.tar centos@10.0.31.10:/home/centos"
 			
@@ -201,7 +205,7 @@ node {
 
 		}
 
-		stage('deploy to PROD'){
+		stage('Promote to PROD'){
 
 		}
 
