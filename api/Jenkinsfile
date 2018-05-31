@@ -174,7 +174,7 @@ node {
 				sh "docker stop ${containerId}"
 				sh "docker rm -f ${containerId}"
 			}
-			sh "docker run -e 'SPRING_PROFILES_ACTIVE=${PROP_ENV}' -d -p 8099:8090 --name  ${artifactName} -t ${artifactName}"
+			sh "docker run -e 'SPRING_PROFILES_ACTIVE=${PROP_ENV}' -d -p 8099:8090 --name ${artifactName} ${artifactName}:${releasedVersion}"
 		}
 
 
