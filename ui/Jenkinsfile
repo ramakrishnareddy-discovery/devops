@@ -73,16 +73,12 @@ node {
 						 npm --version
 						 npm install -g npm@5.6.0 @angular/cli@~1.7.3
 						 npm install
-						 ng build --prod  --aot
+						 ng build --prod --aot
 					'''   }
 			}catch (err) {
 				echo "NPM Build Stage Caught: ${err}"
 			}
-			// ng serve --port 4200
-			// npm start
 		}
-
-
 
 		// TODO: skipping testing as of now
 		// TODO: npm test make necessary changes.Launching browser ChromeHeadless
