@@ -196,7 +196,11 @@ node {
 		 dir('devops') { //sh "ssh -i artifacts/qcom-bang-key.ppk centos@10.0.31.10"
 		 //sh "ssh -i artifacts/qcom-bang-key.pub centos@10.0.31.10" 
 		 //sh "ssh -v -i artifacts/Jenkins_user.ppk centos@10.0.31.242" 
-		 sh "ssh -v centos@10.0.31.242" 
+		 sh '''
+		 		ssh -v centos@10.0.31.242
+				cp  ${distroDirPath}/${artifactName}-${releasedVersion}.tar /home/centos
+				whoami
+			'''
 		 
 		 }
 		 //sh "scp -Cpv -i devops/artifacts/qcom-bang-key.ppk  ${distroDirPath}/${artifactName}-${releasedVersion}.tar centos@10.0.31.10:/home/centos"
