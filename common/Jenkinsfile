@@ -80,20 +80,14 @@ node {
 				}
 		    }
 		}	
-	}
-	catch (Error) {
-		println Error
-		// TODO: 'to' field put distribution list
-		println Error
-		currentBuild.result = "FAILURE"
-		emailext(
-				subject: "JENKINS Notification : FAILED Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
-				body: """ <p>FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
-					      <p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>
-					  """,
-				recipientProviders: [culprits(), developers(), requestor(), brokenTestsSuspects(), brokenBuildSuspects(), upstreamDevelopers()],
-				to: 'r.satti@accenture.com, sashi.kumar.sharma@accenture.com, shresthi.garg@accenture.com, suresh.kumar.sahoo@accenture.com'
-				)
+	}catch (error) {
+		println error
+		// If there was an exception thrown, the build failed
+		currentBuild.result = "FAILED"
+		throw error
+	} finally {
+		// Success or failure, always send notifications
+		sendNotification(currentBuild.result)
 	}
 }
 
@@ -102,3 +96,30 @@ def getReleasedVersion() {
     matcher ? matcher[0][1] : null 	
 }
 
+def sendNotification(String buildStatus) {
+	def emailDistributionList = 'r.satti@accenture.com, sashi.kumar.sharma@accenture.com, shresthi.garg@accenture.com, suresh.kumar.sahoo@accenture.com';
+	//def emailDistributionList = 'r.satti@accenture.com'
+	
+	// build status of null means success
+    buildStatus =  buildStatus ?: 'SUCCESS'
+	if (buildStatus == 'SUCCESS')
+	{
+		// notify users when the build is back to normal
+		emailext(
+				subject: "JENKINS Notification : Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+				body: """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>""",
+				recipientProviders: [culprits(), developers(), requestor(), brokenTestsSuspects(), brokenBuildSuspects(), upstreamDevelopers()],
+				to: "${emailDistributionList}"
+				)
+	}
+	else if (buildStatus == 'FAILURE')
+	{
+		// notify users when the Pipeline fails
+		emailext(
+				subject: "JENKINS Notification : FAILED Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+				body: """ <p>FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>""",
+				recipientProviders: [culprits(), developers(), requestor(), brokenTestsSuspects(), brokenBuildSuspects(), upstreamDevelopers()],
+				to: "${emailDistributionList}"
+				)
+	}
+}
