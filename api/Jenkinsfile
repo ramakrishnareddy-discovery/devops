@@ -195,7 +195,7 @@ node {
 		 //sh "ssh -v -i artifacts/Jenkins_user.ppk centos@10.0.31.242" 
 		  sh "scp -Cpv ${distroDirPath}/${artifactName}-${releasedVersion}.tar centos@10.0.31.242:/home/centos"
 		  sh '''
-		  		ssh -v centos@10.0.31.242:/home/centos
+		  		ssh centos@10.0.31.242
 				ls
 				sudo docker load -i ${artifactName}-${releasedVersion}.tar
 		  		'''
