@@ -227,17 +227,16 @@ def getArtifact() {
 }
 
 def sendNotification(String buildStatus) {
-	//def mailRecipients = 'r.satti@accenture.com, sashi.kumar.sharma@accenture.com, shresthi.garg@accenture.com, suresh.kumar.sahoo@accenture.com';
-	def mailRecipients = 'r.satti@accenture.com'
+	def mailRecipients = 'r.satti@accenture.com, sashi.kumar.sharma@accenture.com, shresthi.garg@accenture.com, suresh.kumar.sahoo@accenture.com';
+	
+	//def mailRecipients = 'r.satti@accenture.com'
 	//def emailDistributionList = 'r.satti@accenture.com'
 	//body: """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>""",
 	//body: """ <p>FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>""",
+	
 	// build status of null means success
     buildStatus =  buildStatus ?: 'SUCCESS'
-	//groovy-html.template
-	//jenkins-matrix-email-html.template
 	
-	buildStatus = 'FAILED'
 	if (buildStatus == 'SUCCESS')
 	{
 		// notify users when the build is back to normal
