@@ -216,15 +216,12 @@ node {
 
 	}catch (Error) {
 		println Error
-		currentBuild.result = "FAILURE"
-		emailext (
-              subject: "JENKINS Notification : FAILED Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
-              body: """
-              <p>FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
-              <p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>""",
-              recipientProviders: [[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider'] , [$class: 'DevelopersRecipientProvider'], 
-			  [$class: 'UpstreamComitterRecipientProvider'], [$class: 'FirstFailingBuildSuspectsRecipientProvider'], [$class: 'FailingTestSuspectsRecipientProvider']]
-            )
+		//currentBuild.result = "FAILURE"
+		emailext body: '''<p>FAILED: Job \'${env.JOB_NAME} [${env.BUILD_NUMBER}]\':</p>
+              <p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>''',
+			   recipientProviders: [culprits(), developers(), requestor(), brokenTestsSuspects(), brokenBuildSuspects(), upstreamDevelopers()], 
+			   subject: 'JENKINS Notification : FAILED Job \'${env.JOB_NAME} [${env.BUILD_NUMBER}]\'', to: 'r.satti@accenture.com'
+	
 	}
 }
 
