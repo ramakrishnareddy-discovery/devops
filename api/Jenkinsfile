@@ -191,9 +191,10 @@ node {
 		  //ssh -v centos@10.0.31.242
 		  //sh "scp -Cpv ${distroDirPath}/${artifactName}-${releasedVersion}.tar centos@10.0.31.242:/home/centos"
 		  sh "scp -Cp ${distroDirPath}/${artifactName}-${releasedVersion}.tar centos@10.0.31.242:/home/centos"
-		  sh "ssh -t centos@10.0.31.242
+		  sh '''ssh -t centos@10.0.31.242 << EOF
 			ls
-			sudo docker load -i ${artifactName}-${releasedVersion}.tar"
+			sudo docker load -i ${artifactName}-${releasedVersion}.tar
+			EOF'''
 		 }
 		 stage('Promote to PROD'){
 		 } 
