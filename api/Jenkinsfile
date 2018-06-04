@@ -190,10 +190,11 @@ node {
 		  
 		  //ssh -v centos@10.0.31.242
 		  //sh "scp -Cpv ${distroDirPath}/${artifactName}-${releasedVersion}.tar centos@10.0.31.242:/home/centos"
+		  //sudo docker load -i '${artifactName}-${releasedVersion}.tar'
 		  sh "scp -Cp ${distroDirPath}/${artifactName}-${releasedVersion}.tar centos@10.0.31.242:/home/centos"
 		  sh """ssh -t centos@10.0.31.242
 			ls
-			sudo docker load -i '${artifactName}-${releasedVersion}.tar'
+			sudo docker load -i qualcomm-ms-demandplanner-1.0.0-SNAPSHOT.tar
 			"""
 		 }
 		 stage('Promote to PROD'){
