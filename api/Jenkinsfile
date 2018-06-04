@@ -256,7 +256,7 @@ def sendNotification(String buildStatus) {
 		emailext(
 				subject: "JENKINS Notification : FAILED Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
 				mimeType: 'text/html',
-				body: '''${SCRIPT, template="jenkins-matrix-email-html.template"}''',
+				body: '''${SCRIPT, template="groovy-html.template"}''',
 				recipientProviders: [culprits(), developers(), requestor(), brokenTestsSuspects(), brokenBuildSuspects(), upstreamDevelopers()],
 				to: "${mailRecipients}",
 				replyTo: "${mailRecipients}"
