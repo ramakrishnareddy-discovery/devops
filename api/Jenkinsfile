@@ -184,7 +184,7 @@ node {
 		// .ssh place ssh key to connect to
 		// ssh config file
 		//
-		/*
+		
 		 stage('Promote to QA'){
 		 //versions = input message: 'Choose testload version!', ok: 'SET', parameters: [choice(name: 'TESTLOAD_VERSION', choices: "${version_collection}", description: '')]
 		 timeout(activity: true, time: 20, unit: 'SECONDS') {
@@ -203,7 +203,7 @@ node {
 		 //
 		 }
 		 stage('Promote to PROD'){
-		 }*/
+		 }
 
 	}catch (error) {
 		println error
@@ -231,8 +231,10 @@ def sendNotification(String buildStatus) {
 	def mailRecipients = 'r.satti@accenture.com'
 	//def emailDistributionList = 'r.satti@accenture.com'
 	//body: """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>""",
+	//body: """ <p>FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>""",
 	// build status of null means success
     buildStatus =  buildStatus ?: 'SUCCESS'
+	
 	if (buildStatus == 'SUCCESS')
 	{
 		// notify users when the build is back to normal
@@ -251,7 +253,7 @@ def sendNotification(String buildStatus) {
 		emailext(
 				subject: "JENKINS Notification : FAILED Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
 				mimeType: 'text/html',
-				body: """ <p>FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>""",
+				body: '''${SCRIPT, template="jenkins-matrix-email-html.template"}''',
 				recipientProviders: [culprits(), developers(), requestor(), brokenTestsSuspects(), brokenBuildSuspects(), upstreamDevelopers()],
 				to: "${mailRecipients}",
 				replyTo: "${mailRecipients}"
