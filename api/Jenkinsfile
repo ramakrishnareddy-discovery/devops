@@ -234,6 +234,8 @@ def sendNotification(String buildStatus) {
 	//body: """ <p>FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>""",
 	// build status of null means success
     buildStatus =  buildStatus ?: 'SUCCESS'
+	//groovy-html.template
+	//jenkins-matrix-email-html.template
 	
 	if (buildStatus == 'SUCCESS')
 	{
@@ -247,13 +249,13 @@ def sendNotification(String buildStatus) {
 				replyTo: "${mailRecipients}"
 				)
 	}
-	else if (buildStatus == 'FAILURE')
+	else if (buildStatus == 'FAILED')
 	{
 		// notify users when the Pipeline fails
 		emailext(
 				subject: "JENKINS Notification : FAILED Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
 				mimeType: 'text/html',
-				body: '''${SCRIPT, template="groovy-html.template"}''',
+				body: '''${SCRIPT, template="jenkins-matrix-email-html.template"}''',
 				recipientProviders: [culprits(), developers(), requestor(), brokenTestsSuspects(), brokenBuildSuspects(), upstreamDevelopers()],
 				to: "${mailRecipients}",
 				replyTo: "${mailRecipients}"
