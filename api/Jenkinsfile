@@ -181,11 +181,8 @@ node {
 			sh "docker run -e 'SPRING_PROFILES_ACTIVE=${PROP_ENV}' -d -p 8099:8090 --name ${artifactName} -t ${artifactName}:${releasedVersion}"
 		}
 
-		// .ssh place ssh key to connect to
-		// ssh config file
-		//
 		
-		 stage('Promote to QA'){
+		stage('Promote to QA'){
 		 //versions = input message: 'Choose testload version!', ok: 'SET', parameters: [choice(name: 'TESTLOAD_VERSION', choices: "${version_collection}", description: '')]
 		// timeout(activity: true, time: 20, unit: 'SECONDS') {
 		 //input message: 'Deploy to QA?', ok: 'Deploy'
@@ -197,6 +194,11 @@ node {
 		 //sh "ssh -i artifacts/qcom-bang-key.pub centos@10.0.31.10" 
 		 //sh "ssh -v -i artifacts/Jenkins_user.ppk centos@10.0.31.242" 
 		  sh "scp -Cpv ${distroDirPath}/${artifactName}-${releasedVersion}.tar centos@10.0.31.242:/home/centos"
+		  sh '''
+		  		ssh -v centos@10.0.31.242:/home/centos
+				ls
+				sudo docker load -i ${artifactName}-${releasedVersion}.tar
+		  		'''
 		 //sh '''
 		 	//	ssh -v centos@10.0.31.242
 			//	cp  "${artifactName}-${releasedVersion}.tar" /home/centos
