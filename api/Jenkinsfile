@@ -187,20 +187,21 @@ node {
 		
 		 stage('Promote to QA'){
 		 //versions = input message: 'Choose testload version!', ok: 'SET', parameters: [choice(name: 'TESTLOAD_VERSION', choices: "${version_collection}", description: '')]
-		 timeout(activity: true, time: 20, unit: 'SECONDS') {
-		 input message: 'Deploy to QA?', ok: 'Deploy'
-		 }
+		// timeout(activity: true, time: 20, unit: 'SECONDS') {
+		 //input message: 'Deploy to QA?', ok: 'Deploy'
+		 //}
 		 //def filePath = ${workspacePath}/
 		 //sh "ssh -i devops/artifacts/qcom-bang-key.ppk centos@ip-10-0-31-10.ec2.internal 'nohup sleep 300 >/dev/null 2>/dev/null </dev/null &'"
 		 //sh "ssh -i devops/artifacts/qcom-bang-key.ppk centos@ip-10-0-31-10.ec2.internal;pwd"
-		 dir('devops') { //sh "ssh -i artifacts/qcom-bang-key.ppk centos@10.0.31.10"
+		 dir('distroDirPath') { //sh "ssh -i artifacts/qcom-bang-key.ppk centos@10.0.31.10"
 		 //sh "ssh -i artifacts/qcom-bang-key.pub centos@10.0.31.10" 
 		 //sh "ssh -v -i artifacts/Jenkins_user.ppk centos@10.0.31.242" 
-		 sh '''
-		 		ssh -v centos@10.0.31.242
-				cp  ${distroDirPath}/${artifactName}-${releasedVersion}.tar /home/centos
-				whoami
-			'''
+		 dir (distroDirPath) { sh "scp  -Cpv ${artifactName}-${releasedVersion}.tar centos@10.0.31.242:/home/centos" }
+		 //sh '''
+		 	//	ssh -v centos@10.0.31.242
+			//	cp  "${artifactName}-${releasedVersion}.tar" /home/centos
+			//	whoami
+			//'''
 		 
 		 }
 		 //sh "scp -Cpv -i devops/artifacts/qcom-bang-key.ppk  ${distroDirPath}/${artifactName}-${releasedVersion}.tar centos@10.0.31.10:/home/centos"
