@@ -241,7 +241,7 @@ def sendNotification(String buildStatus) {
 				to: "${emailDistributionList}"
 				)
 	}
-	else if (buildStatus == 'FAILURE')
+	else if (buildStatus == 'FAILED')
 	{
 		// notify users when the Pipeline fails
 		emailext(

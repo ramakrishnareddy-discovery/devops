@@ -184,7 +184,7 @@ node {
 		// .ssh place ssh key to connect to
 		// ssh config file
 		//
-		
+		/*
 		 stage('Promote to QA'){
 		 //versions = input message: 'Choose testload version!', ok: 'SET', parameters: [choice(name: 'TESTLOAD_VERSION', choices: "${version_collection}", description: '')]
 		 timeout(activity: true, time: 20, unit: 'SECONDS') {
@@ -203,7 +203,7 @@ node {
 		 //
 		 }
 		 stage('Promote to PROD'){
-		 }
+		 } */
 
 	}catch (error) {
 		println error
@@ -237,6 +237,7 @@ def sendNotification(String buildStatus) {
 	//groovy-html.template
 	//jenkins-matrix-email-html.template
 	
+	buildStatus = 'FAILED'
 	if (buildStatus == 'SUCCESS')
 	{
 		// notify users when the build is back to normal
