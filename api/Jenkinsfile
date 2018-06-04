@@ -184,7 +184,7 @@ node {
 		// .ssh place ssh key to connect to
 		// ssh config file
 		//
-		/*
+		
 		 stage('Promote to QA'){
 		 //versions = input message: 'Choose testload version!', ok: 'SET', parameters: [choice(name: 'TESTLOAD_VERSION', choices: "${version_collection}", description: '')]
 		 timeout(activity: true, time: 20, unit: 'SECONDS') {
@@ -194,7 +194,9 @@ node {
 		 //sh "ssh -i devops/artifacts/qcom-bang-key.ppk centos@ip-10-0-31-10.ec2.internal 'nohup sleep 300 >/dev/null 2>/dev/null </dev/null &'"
 		 //sh "ssh -i devops/artifacts/qcom-bang-key.ppk centos@ip-10-0-31-10.ec2.internal;pwd"
 		 dir('devops') { //sh "ssh -i artifacts/qcom-bang-key.ppk centos@10.0.31.10"
-		 sh "ssh -i artifacts/qcom-bang-key.pub centos@10.0.31.10" }
+		 sh "ssh -i artifacts/qcom-bang-key.pub centos@10.0.31.10" 
+		 
+		 }
 		 //sh "scp -Cpv -i devops/artifacts/qcom-bang-key.ppk  ${distroDirPath}/${artifactName}-${releasedVersion}.tar centos@10.0.31.10:/home/centos"
 		 // by default look for private key/identity file  @/var/lib/jenkins/.ssh
 		 //dir (distroDirPath) { sh "scp  -Cpv ${artifactName}-${releasedVersion}.tar centos@10.0.31.10:/home/centos" }
@@ -203,7 +205,7 @@ node {
 		 //
 		 }
 		 stage('Promote to PROD'){
-		 } */
+		 } 
 
 	}catch (error) {
 		println error
@@ -212,7 +214,7 @@ node {
 		throw error
 	} finally {
 		// Success or failure, always send notifications
-		sendNotification(currentBuild.result)
+		//sendNotification(currentBuild.result)
 	}
 }
 
