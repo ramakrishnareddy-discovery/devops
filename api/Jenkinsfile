@@ -32,10 +32,7 @@ node {
 		def distroDirPath = "/tmp/jenkins/distro"
 		def artifactName
 		def releasedVersion
-		def buildStatus = currentBuild.result
-		echo "buildStatus:${buildStatus}"
 
-		echo "${currentBuild.result}"
 		// =========== USER DEFINED VARS ===========
 
 		stage('Git Checkout') {
@@ -183,7 +180,6 @@ node {
 			}
 			sh "docker run -e 'SPRING_PROFILES_ACTIVE=${PROP_ENV}' -d -p 8099:8090 --name ${artifactName} -t ${artifactName}:${releasedVersion}"
 		}
-		sendNotification(currentBuild.result)
 
 		// .ssh place ssh key to connect to
 		// ssh config file
@@ -233,6 +229,9 @@ def getArtifact() {
 def sendNotification(String buildStatus) {
 	//def emailDistributionList = 'r.satti@accenture.com, sashi.kumar.sharma@accenture.com, shresthi.garg@accenture.com, suresh.kumar.sahoo@accenture.com';
 	def emailDistributionList = 'r.satti@accenture.com'
+	
+	// build status of null means success
+    buildStatus =  buildStatus ?: 'SUCCESS'
 	if (buildStatus == 'SUCCESS')
 	{
 		// notify users when the build is back to normal
