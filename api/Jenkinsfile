@@ -196,7 +196,7 @@ node {
 		 dir('distroDirPath') { //sh "ssh -i artifacts/qcom-bang-key.ppk centos@10.0.31.10"
 		 //sh "ssh -i artifacts/qcom-bang-key.pub centos@10.0.31.10" 
 		 //sh "ssh -v -i artifacts/Jenkins_user.ppk centos@10.0.31.242" 
-		 dir (distroDirPath) { sh "scp  -Cpv ${artifactName}-${releasedVersion}.tar centos@10.0.31.242:/home/centos" }
+		  sh "scp  -Cpv ${artifactName}-${releasedVersion}.tar centos@10.0.31.242:/home/centos" 
 		 //sh '''
 		 	//	ssh -v centos@10.0.31.242
 			//	cp  "${artifactName}-${releasedVersion}.tar" /home/centos
