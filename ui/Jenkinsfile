@@ -214,6 +214,12 @@ node {
 			//sh "docker run -e 'SPRING_PROFILES_ACTIVE=${PROP_ENV}' -d -p 8099:8090 --name  ${artifactName} -t ${artifactName}"
 			sh "docker run -d -p 8098:80 --name  ${artifactName} -t ${artifactName}:${releasedVersion}"
 		}
+
+		stage('Promote to QA'){
+			sh "scp -Cp ${distroDirPath}/${artifactName}-${releasedVersion}.tar centos@10.0.31.242:/home/centos"
+			sh 'ssh -t centos@10.0.31.242 "ls"'
+			//sh 'ssh -t centos@10.0.31.242 "ls && sudo docker load -i demandplannerui-0.1.tar && docker run" '
+		}
 	}catch (error) {
 		println error
 		// If there was an exception thrown, the build failed

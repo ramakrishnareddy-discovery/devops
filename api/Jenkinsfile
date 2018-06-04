@@ -181,20 +181,21 @@ node {
 			sh "docker run -e 'SPRING_PROFILES_ACTIVE=${PROP_ENV}' -d -p 8099:8090 --name ${artifactName} -t ${artifactName}:${releasedVersion}"
 		}
 
-		
+
 		stage('Promote to QA'){
-		 //versions = input message: 'Choose testload version!', ok: 'SET', parameters: [choice(name: 'TESTLOAD_VERSION', choices: "${version_collection}", description: '')]
-		// timeout(activity: true, time: 20, unit: 'SECONDS') {
-		 //input message: 'Deploy to QA?', ok: 'Deploy'
-		 //}
-		  
-		  //ssh -v centos@10.0.31.242
-		  //sh "scp -Cpv ${distroDirPath}/${artifactName}-${releasedVersion}.tar centos@10.0.31.242:/home/centos"
-		  sh "scp -Cp ${distroDirPath}/${artifactName}-${releasedVersion}.tar centos@10.0.31.242:/home/centos"
-		  sh 'ssh -t centos@10.0.31.242 "ls && sudo docker load -i qualcomm-ms-demandplanner-1.0.0-SNAPSHOT.tar" '
-		 }
-		 stage('Promote to PROD'){
-		 } 
+			//versions = input message: 'Choose testload version!', ok: 'SET', parameters: [choice(name: 'TESTLOAD_VERSION', choices: "${version_collection}", description: '')]
+			// timeout(activity: true, time: 20, unit: 'SECONDS') {
+			//input message: 'Deploy to QA?', ok: 'Deploy'
+			//}
+
+			sh "scp -Cp ${distroDirPath}/${artifactName}-${releasedVersion}.tar centos@10.0.31.242:/home/centos"
+			
+			//TODO: working but hardcoded the tar file
+			sh 'ssh -t centos@10.0.31.242 "ls && sudo docker load -i qualcomm-ms-demandplanner-1.0.0-SNAPSHOT.tar" ' 
+			//sh 'ssh -t centos@10.0.31.242 "ls && sudo docker load -i ${artifactName}-${releasedVersion}.tar" '
+		}
+		stage('Promote to PROD'){
+		}
 
 	}catch (error) {
 		println error
@@ -219,15 +220,15 @@ def getArtifact() {
 
 def sendNotification(String buildStatus) {
 	//def mailRecipients = 'r.satti@accenture.com, sashi.kumar.sharma@accenture.com, shresthi.garg@accenture.com, suresh.kumar.sahoo@accenture.com';
-	
+
 	def mailRecipients = 'r.satti@accenture.com'
 	//def emailDistributionList = 'r.satti@accenture.com'
 	//body: """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>""",
 	//body: """ <p>FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>""",
-	
+
 	// build status of null means success
-    buildStatus =  buildStatus ?: 'SUCCESS'
-	
+	buildStatus =  buildStatus ?: 'SUCCESS'
+
 	if (buildStatus == 'SUCCESS')
 	{
 		// notify users when the build is back to normal
