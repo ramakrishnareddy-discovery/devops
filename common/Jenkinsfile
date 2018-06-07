@@ -70,7 +70,7 @@ node {
 
 		if (GIT_TAG.toBoolean()) {
 			stage('Tag Branch'){
-				def releasedVersion = utils.getReleasedVersion('common')
+				def releasedVersion = utils.getReleasedVersion("common")
 				sshagent (credentials: ['git-repo-ssh-access']) {
 						dir('common') {
 							sh "ls -l"
@@ -85,10 +85,10 @@ node {
 	}catch (error) {
 		println error
 		// If there was an exception thrown, the build failed
-		currentBuild.result = "FAILED"
+		currentBuild.result = 'FAILED'
 		throw error
 	} finally {
 		// Success or failure, always send notifications
-		utils.sendNotification(currentBuild.result)
+		utils.sendNotification("${currentBuild.result}")
 	}
 }
