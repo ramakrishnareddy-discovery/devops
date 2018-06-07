@@ -185,14 +185,12 @@ node {
 		}
 
 
-		stage('Store Image to QA'){
+		stage('Save Image to QA'){
 			//versions = input message: 'Choose testload version!', ok: 'SET', parameters: [choice(name: 'TESTLOAD_VERSION', choices: "${version_collection}", description: '')]
-			// timeout(activity: true, time: 20, unit: 'SECONDS') {
-			//input message: 'Deploy to QA?', ok: 'Deploy'
-			//}
-
+			timeout(activity: true, time: 20, unit: 'SECONDS') {
+				input message: 'Save to QA Env?', ok: 'Save'
+			}
 			sh "scp -Cp ${distroDirPath}/${artifactName}-${releasedVersion}.tar centos@10.0.31.242:/home/centos"
-			
 			//TODO: working but hardcoded the tar file
 			sh 'ssh -t centos@10.0.31.242 "ls && sudo docker load -i qualcomm-ms-demandplanner-1.0.0-SNAPSHOT.tar" ' 
 			//sh 'ssh -t centos@10.0.31.242 "ls && sudo docker load -i ${artifactName}-${releasedVersion}.tar" '
