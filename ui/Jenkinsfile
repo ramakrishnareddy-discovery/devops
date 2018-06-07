@@ -1,4 +1,5 @@
 #!/usr/bin/env groovy
+@Library('JenkinsSharedLibrary') _
 
 node {
 	properties([
@@ -19,6 +20,7 @@ node {
 		])
 	])
 
+	Utils utils = new Utils()
 
 	try {
 		// =========== USER DEFINED VARS ===========
@@ -215,7 +217,8 @@ node {
 			sh "docker run -d -p 8098:80 --name  ${artifactName} -t ${artifactName}:${releasedVersion}"
 		}
 
-		stage('Promote to QA'){
+		//stage('Promote to QA'){
+		stage('Store Image to QA'){	
 			sh "scp -Cp ${distroDirPath}/${artifactName}-${releasedVersion}.tar centos@10.0.31.242:/home/centos"
 			sh 'ssh -t centos@10.0.31.242 "ls"'
 			//sh 'ssh -t centos@10.0.31.242 "ls && sudo docker load -i demandplannerui-0.1.tar && docker run" '
@@ -223,40 +226,10 @@ node {
 	}catch (error) {
 		println error
 		// If there was an exception thrown, the build failed
-		currentBuild.result = "FAILED"
+		currentBuild.result = 'FAILED'
 		throw error
 	} finally {
 		// Success or failure, always send notifications
-		sendNotification(currentBuild.result)
-	}
-}
-
-def sendNotification(String buildStatus) {
-	def mailRecipients = 'r.satti@accenture.com, sashi.kumar.sharma@accsenture.com, shresthi.garg@accenture.com, suresh.kumar.sahoo@accenture.com';
-	//def mailRecipients = 'r.satti@accenture.com'
-	
-	// build status of null means success
-    buildStatus =  buildStatus ?: 'SUCCESS'
-	if (buildStatus == 'SUCCESS')
-	{
-		// notify users when the build is back to normal
-		emailext(
-				subject: "JENKINS Notification : Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
-				body: '''${SCRIPT, template="groovy-html.template"}''',
-				recipientProviders: [culprits(), developers(), requestor(), brokenTestsSuspects(), brokenBuildSuspects(), upstreamDevelopers()],
-				to: "${mailRecipients}",
-				replyTo: "${mailRecipients}"
-				)
-	}
-	else if (buildStatus == 'FAILED')
-	{
-		// notify users when the Pipeline fails
-		emailext(
-				subject: "JENKINS Notification : FAILED Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
-				body: '''${SCRIPT, template="groovy-html.template"}''',
-				recipientProviders: [culprits(), developers(), requestor(), brokenTestsSuspects(), brokenBuildSuspects(), upstreamDevelopers()],
-				to: "${mailRecipients}",
-				replyTo: "${mailRecipients}"
-				)
+		utils.sendNotification(currentBuild.result)
 	}
 }
