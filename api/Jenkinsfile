@@ -47,8 +47,8 @@ node {
 				url: "${apiRepoUrl}"
 			}
 
-			artifactName = utils.getArtifact('demandplannerapi')
-			releasedVersion = utils.getReleasedVersion('demandplannerapi')
+			artifactName = utils.getArtifact("demandplannerapi")
+			releasedVersion = utils.getReleasedVersion("demandplannerapi")
 
 			echo "artifactName:${artifactName}"
 			echo "releasedVersion:${releasedVersion}"
@@ -207,7 +207,9 @@ node {
 		throw error
 	} finally {
 		// Success or failure, always send notifications
-		sendNotification(currentBuild.result)
+		def buildResult = "${currentBuild.result}"
+		echo "API buildResult: ${buildResult}"
+		utils.sendNotification("${buildResult}")
 	}
 }
 
