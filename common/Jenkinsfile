@@ -1,4 +1,5 @@
 #!/usr/bin/env groovy
+@Library('JenkinsSharedLibrary') _
 
 node {
 	properties([
@@ -16,6 +17,7 @@ node {
 		])
 	])
 
+	Utils utils = new Utils()
 	try {
 		// =========== USER DEFINED VARS ===========
 		def workspacePath = pwd()
@@ -68,7 +70,7 @@ node {
 
 		if (GIT_TAG.toBoolean()) {
 			stage('Tag Branch'){
-				def releasedVersion = getReleasedVersion()
+				def releasedVersion = utils.getReleasedVersion()
 				sshagent (credentials: ['git-repo-ssh-access']) {
 						dir('common') {
 							sh "ls -l"
@@ -87,41 +89,6 @@ node {
 		throw error
 	} finally {
 		// Success or failure, always send notifications
-		sendNotification(currentBuild.result)
-	}
-}
-
-def getReleasedVersion() {
-	def matcher = readFile('common/pom.xml') =~ '<version>(.+?)</version>'
-    matcher ? matcher[0][1] : null 	
-}
-
-def sendNotification(String buildStatus) {
-	def mailRecipients = 'r.satti@accenture.com, sashi.kumar.sharma@accenture.com, shresthi.garg@accenture.com, suresh.kumar.sahoo@accenture.com';
-	//def mailRecipients = 'r.satti@accenture.com'
-	
-	// build status of null means success
-    buildStatus =  buildStatus ?: 'SUCCESS'
-	if (buildStatus == 'SUCCESS')
-	{
-		// notify users when the build is back to normal
-		emailext(
-				subject: "JENKINS Notification : Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
-				body: '''${SCRIPT, template="groovy-html.template"}''',
-				recipientProviders: [culprits(), developers(), requestor(), brokenTestsSuspects(), brokenBuildSuspects(), upstreamDevelopers()],
-				to: "${mailRecipients}",
-				replyTo: "${mailRecipients}"
-				)
-	}
-	else if (buildStatus == 'FAILED')
-	{
-		// notify users when the Pipeline fails
-		emailext(
-				subject: "JENKINS Notification : FAILED Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
-				body: '''${SCRIPT, template="groovy-html.template"}''',
-				recipientProviders: [culprits(), developers(), requestor(), brokenTestsSuspects(), brokenBuildSuspects(), upstreamDevelopers()],
-				to: "${mailRecipients}",
-				replyTo: "${mailRecipients}"
-				)
+		utils.sendNotification(currentBuild.result)
 	}
 }
