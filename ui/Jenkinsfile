@@ -217,11 +217,13 @@ node {
 			sh "docker run -d -p 8098:80 --name  ${artifactName} -t ${artifactName}:${releasedVersion}"
 		}
 
-		//stage('Promote to QA'){
-		stage('Store Image to QA'){	
+		stage('Save Image to QA'){	
+			timeout(activity: true, time: 20, unit: 'SECONDS') {
+				input message: 'Save to QA Env?', ok: 'Save'
+			}
 			sh "scp -Cp ${distroDirPath}/${artifactName}-${releasedVersion}.tar centos@10.0.31.242:/home/centos"
-			sh 'ssh -t centos@10.0.31.242 "ls"'
-			//sh 'ssh -t centos@10.0.31.242 "ls && sudo docker load -i demandplannerui-0.1.tar && docker run" '
+			//sh 'ssh -t centos@10.0.31.242 "ls"'
+			sh 'ssh -t centos@10.0.31.242 "ls && sudo docker load -i demandplannerui-0.1.tar" '
 		}
 	}catch (error) {
 		println error
