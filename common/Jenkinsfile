@@ -70,7 +70,7 @@ node {
 
 		if (GIT_TAG.toBoolean()) {
 			stage('Tag Branch'){
-				def releasedVersion = utils.getReleasedVersion()
+				def releasedVersion = utils.getReleasedVersion('common')
 				sshagent (credentials: ['git-repo-ssh-access']) {
 						dir('common') {
 							sh "ls -l"
