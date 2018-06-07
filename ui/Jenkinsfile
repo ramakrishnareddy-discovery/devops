@@ -218,7 +218,7 @@ node {
 		}
 
 		//stage('Promote to QA'){
-		stage('Store to QA'){	
+		stage('Store Image to QA'){	
 			sh "scp -Cp ${distroDirPath}/${artifactName}-${releasedVersion}.tar centos@10.0.31.242:/home/centos"
 			sh 'ssh -t centos@10.0.31.242 "ls"'
 			//sh 'ssh -t centos@10.0.31.242 "ls && sudo docker load -i demandplannerui-0.1.tar && docker run" '
@@ -226,7 +226,7 @@ node {
 	}catch (error) {
 		println error
 		// If there was an exception thrown, the build failed
-		currentBuild.result = "FAILED"
+		currentBuild.result = 'FAILED'
 		throw error
 	} finally {
 		// Success or failure, always send notifications
