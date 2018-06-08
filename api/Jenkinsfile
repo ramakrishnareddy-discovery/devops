@@ -113,9 +113,7 @@ node {
 
 		stage('Docker Build'){
 			dir('demandplannerapi') {
-				echo "Starting Docker Image Creation..."
-				sh "mvn docker:build"
-				echo "Docker Image Creation Complted..."
+				utils.buildImage(artifactName, releasedVersion)
 			}
 		}
 
@@ -123,20 +121,7 @@ node {
 			sshagent (credentials: ['git-repo-ssh-access']) {
 				//Save one or more images to a tar archive.
 				stage('Save Docker Image'){
-					sh "docker images"
-					dir ('demandplannerapi') {
-						//docker save -o <path for generated tar file> <existing image name>
-						sh "docker save -o target/${artifactName}-${releasedVersion}.tar ${artifactName}:${releasedVersion}"
-						echo "Copying tar file..."
-						sh "cp -rf target/${artifactName}-${releasedVersion}.tar ${distroDirPath}"
-					}
-
-					dir (distroDirPath) {
-						sh "git pull origin master"
-						sh "git add ${artifactName}-${releasedVersion}.tar"
-						sh 'git commit -m "Jenkins Job:${JOB_NAME} pushing image tar file" '
-						sh "git push origin HEAD:master"
-					}
+					utils.pushImageToRepo('demandplannerapi', distroDirPath, artifactName, releasedVersion)
 				}
 			}
 		}
@@ -145,11 +130,7 @@ node {
 			sshagent (credentials: ['git-repo-ssh-access']) {
 				stage('Tag Branch'){
 					dir('demandplannerapi') {
-						sh "ls -l"
-						sh "git remote set-url origin ${apiRepoUrl}"
-						//sh "git tag ${IMAGE_BRANCH_PREFIX}-${BUILD_NUMBER}"
-						sh "git tag ${releasedVersion}-${BUILD_NUMBER}"
-						sh "git push --tags"
+						utils.tagBranch(apiRepoUrl, releasedVersion)
 					}
 				}
 			}
@@ -160,36 +141,21 @@ node {
 		//docker ps -a -q --filter=ancestor=sonarqube | xargs -I {} docker rm {}
 
 		stage('deploy to DEV'){
-			sh "docker ps"
-			def  containerId = sh (
-					script: "docker ps --no-trunc -aqf 'name=${artifactName}'",
-					returnStdout: true
-					).trim()
-			echo "containerId: ${containerId}"
-
-			if (containerId != "") {
-				sh "docker stop ${containerId}"
-				sh "docker rm -f ${containerId}"
-			}
-			sh "docker run -e 'SPRING_PROFILES_ACTIVE=${PROP_ENV}' -d -p 8099:8090 --name ${artifactName} -t ${artifactName}:${releasedVersion}"
+			utils.deployAPIToDev(artifactName, releasedVersion, PROP_ENV)
 		}
 
 
 		stage('Save Image to QA'){
+			utils.saveImage(distroDirPath, artifactName, releasedVersion, "10.0.31.242")
 			//versions = input message: 'Choose testload version!', ok: 'SET', parameters: [choice(name: 'TESTLOAD_VERSION', choices: "${version_collection}", description: '')]
-			timeout(activity: true, time: 20, unit: 'SECONDS') {
-				input message: 'Save to QA Env?', ok: 'Save'
-			}
-			sh "scp -Cp ${distroDirPath}/${artifactName}-${releasedVersion}.tar centos@10.0.31.242:/home/centos"
-			//TODO: working but hardcoded the tar file
-			sh 'ssh -t centos@10.0.31.242 "ls && sudo docker load -i qualcomm-ms-demandplanner-1.0.0-SNAPSHOT.tar" ' 
+			
 			//sh 'ssh -t centos@10.0.31.242 "ls && sudo docker load -i ${artifactName}-${releasedVersion}.tar" '
 		}
 
 	}catch (error) {
 		println error
 		// If there was an exception thrown, the build failed
-		currentBuild.result = 'FAILED'
+		currentBuild.result = 'FAILURE'
 		throw error
 	} finally {
 		// Success or failure, always send notifications
