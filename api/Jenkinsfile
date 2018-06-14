@@ -1,4 +1,5 @@
 #!/usr/bin/env groovy
+@Library('JenkinsSharedLibrary') _
 
 node {
 	properties([
@@ -19,6 +20,8 @@ node {
 			//cron('@daily')
 		])
 	])
+
+	Utils utils = new Utils()
 
 	try {
 		// =========== USER DEFINED VARS ===========
@@ -44,8 +47,8 @@ node {
 				url: "${apiRepoUrl}"
 			}
 
-			artifactName = getArtifact()
-			releasedVersion = getReleasedVersion()
+			artifactName = utils.getArtifact("demandplannerapi")
+			releasedVersion = utils.getReleasedVersion("demandplannerapi")
 
 			echo "artifactName:${artifactName}"
 			echo "releasedVersion:${releasedVersion}"
@@ -182,75 +185,26 @@ node {
 		}
 
 
-		stage('Promote to QA'){
+		stage('Save Image to QA'){
 			//versions = input message: 'Choose testload version!', ok: 'SET', parameters: [choice(name: 'TESTLOAD_VERSION', choices: "${version_collection}", description: '')]
-			// timeout(activity: true, time: 20, unit: 'SECONDS') {
-			//input message: 'Deploy to QA?', ok: 'Deploy'
-			//}
-
+			timeout(activity: true, time: 20, unit: 'SECONDS') {
+				input message: 'Save to QA Env?', ok: 'Save'
+			}
 			sh "scp -Cp ${distroDirPath}/${artifactName}-${releasedVersion}.tar centos@10.0.31.242:/home/centos"
-			
 			//TODO: working but hardcoded the tar file
 			sh 'ssh -t centos@10.0.31.242 "ls && sudo docker load -i qualcomm-ms-demandplanner-1.0.0-SNAPSHOT.tar" ' 
 			//sh 'ssh -t centos@10.0.31.242 "ls && sudo docker load -i ${artifactName}-${releasedVersion}.tar" '
-		}
-		stage('Promote to PROD'){
 		}
 
 	}catch (error) {
 		println error
 		// If there was an exception thrown, the build failed
-		currentBuild.result = "FAILED"
+		currentBuild.result = 'FAILED'
 		throw error
 	} finally {
 		// Success or failure, always send notifications
-		sendNotification(currentBuild.result)
+		utils.sendNotification(currentBuild.result)
 	}
 }
 
-def getReleasedVersion() {
-	def matcher = readFile('demandplannerapi/pom.xml') =~ '<version>(.+?)</version>'
-	matcher ? matcher[0][1] : null
-}
 
-def getArtifact() {
-	def matcher = readFile('demandplannerapi/pom.xml') =~ '<artifactId>(.+?)</artifactId>'
-	matcher ? matcher[0][1] : null
-}
-
-def sendNotification(String buildStatus) {
-	//def mailRecipients = 'r.satti@accenture.com, sashi.kumar.sharma@accenture.com, shresthi.garg@accenture.com, suresh.kumar.sahoo@accenture.com';
-
-	def mailRecipients = 'r.satti@accenture.com'
-	//def emailDistributionList = 'r.satti@accenture.com'
-	//body: """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>""",
-	//body: """ <p>FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>""",
-
-	// build status of null means success
-	buildStatus =  buildStatus ?: 'SUCCESS'
-
-	if (buildStatus == 'SUCCESS')
-	{
-		// notify users when the build is back to normal
-		emailext(
-				subject: "JENKINS Notification : Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
-				mimeType: 'text/html',
-				body: '''${SCRIPT, template="groovy-html.template"}''',
-				recipientProviders: [culprits(), developers(), requestor(), brokenTestsSuspects(), brokenBuildSuspects(), upstreamDevelopers()],
-				to: "${mailRecipients}",
-				replyTo: "${mailRecipients}"
-				)
-	}
-	else if (buildStatus == 'FAILED')
-	{
-		// notify users when the Pipeline fails
-		emailext(
-				subject: "JENKINS Notification : FAILED Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
-				mimeType: 'text/html',
-				body: '''${SCRIPT, template="groovy-html.template"}''',
-				recipientProviders: [culprits(), developers(), requestor(), brokenTestsSuspects(), brokenBuildSuspects(), upstreamDevelopers()],
-				to: "${mailRecipients}",
-				replyTo: "${mailRecipients}"
-				)
-	}
-}
