@@ -207,6 +207,7 @@ node {
 			sh "docker run -d -p 8098:80 --name  ${artifactName} -t ${artifactName}:${releasedVersion}"
 		}
 
+		// TODO: if GIT_IMAGE_PUSH.toBoolean() is true, then only we get latest image. Hence here add if (GIT_IMAGE_PUSH.toBoolean()) true condition.
 		stage('Save Image to QA'){	
 			timeout(activity: true, time: 20, unit: 'SECONDS') {
 				input message: 'Save to QA Env?', ok: 'Save'

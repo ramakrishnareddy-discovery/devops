@@ -67,12 +67,12 @@ node {
 
 				
 				dir(distroDirPath){
-				//	git branch: '${DISTRO_GIT_BRANCH}',
-				//	credentialsId: 'git-repo-ssh-access',
-				//	url: "${distroRepoUrl}"
-					checkout([$class: 'GitSCM', branches: [[name: '${DISTRO_GIT_BRANCH}']], doGenerateSubmoduleConfigurations: false, 
-					extensions: [[$class: 'CheckoutOption', timeout: 20], [$class: 'CloneOption', depth: 0, noTags: false, reference: '', shallow: true, timeout: 20]],
-					submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'git-repo-ssh-access', url: "${distroRepoUrl}"]]])
+					git branch: '${DISTRO_GIT_BRANCH}',
+					credentialsId: 'git-repo-ssh-access',
+					url: "${distroRepoUrl}"
+				/*	checkout([$class: 'GitSCM', branches: [[name: '${DISTRO_GIT_BRANCH}']], doGenerateSubmoduleConfigurations: false, 
+					extensions: [[$class: 'CheckoutOption', timeout: 15], [$class: 'CloneOption', depth: 0, noTags: false, reference: '', shallow: true, timeout: 15]],
+					submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'git-repo-ssh-access', url: "${distroRepoUrl}"]]]) */
 				}
 			}
 			else {
@@ -150,7 +150,7 @@ node {
 			utils.deployAPIToDev(artifactName, releasedVersion, PROP_ENV)
 		}
 
-
+		// TODO: if GIT_IMAGE_PUSH.toBoolean() is true, then only we get latest image. Hence here add if (GIT_IMAGE_PUSH.toBoolean()) true condition.
 		stage('Save Image to QA'){
 			utils.saveImage(distroDirPath, artifactName, releasedVersion, "10.0.31.242")
 			//versions = input message: 'Choose testload version!', ok: 'SET', parameters: [choice(name: 'TESTLOAD_VERSION', choices: "${version_collection}", description: '')]
