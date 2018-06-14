@@ -1,7 +1,7 @@
 #!/usr/bin/env groovy
 @Library('JenkinsSharedLibrary') _
 
-node(jenkins-slave) {
+node("jenkins-slave") {
 	properties([
 		[$class: 'BuildDiscarderProperty', strategy:
 			[$class: 'LogRotator', numToKeepStr: '3']],
