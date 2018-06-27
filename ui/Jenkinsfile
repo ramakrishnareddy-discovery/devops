@@ -12,6 +12,7 @@ node {
 			choice(choices: ["dev", "qa"].join("\n"), description: 'Properties Environment', name: 'PROP_ENV'),
 			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Image store required or not'),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not')
+			booleanParam(name: 'NG_BUILD', defaultValue: false,	description: 'ng build required or not'),
 		]),
 		pipelineTriggers([
 			//pollSCM('H/15 * * * *'),
@@ -64,11 +65,8 @@ node {
 			}
 		}
 
-		//As per other experiences, ng build in jenkins file doesn't work as expected. So moved to docker file
 		//This stage installs all of the node dependencies, performs linting and builds the code.
 		stage('NPM Build') {
-			//npm install -g npm@4.0.3 @angular/cli@1.0.4
-			//npm install -g npm@5.6.0 @angular/cli@~1.7.3
 			// TODO: //ng lint Update her about ng lint
 			dir('demandplannerui') { sh '''
 						node --version
@@ -176,7 +174,6 @@ node {
 	}catch (error) {
 		println error
 		// If there was an exception thrown, the build failed
-		//currentBuild.result = 'FAILED'
 		currentBuild.result = 'FAILURE'
 		throw error
 	} finally {
