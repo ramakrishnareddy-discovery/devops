@@ -30,7 +30,7 @@ node {
 		def mvnHome = tool name: "Maven_V3"
 		env.PATH = "${mvnHome}/bin:${env.PATH}"
 		def apiRepoUrl = 'ssh://git@innersource.accenture.com/appq/demandplannerapi.git'
-		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro.git'
+		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_api.git'
 		def devopsRepoUrl = 'ssh://git@innersource.accenture.com/appq/devops.git'
 		def distroDirPath = "/tmp/jenkins/distro"
 		def artifactName
@@ -65,14 +65,14 @@ node {
 				sh "whoami"
 				echo "${distroDirPath} doesn't exist.Continue cloning ..."
 
-				
+
 				dir(distroDirPath){
 					git branch: '${DISTRO_GIT_BRANCH}',
 					credentialsId: 'git-repo-ssh-access',
 					url: "${distroRepoUrl}"
-				/*	checkout([$class: 'GitSCM', branches: [[name: '${DISTRO_GIT_BRANCH}']], doGenerateSubmoduleConfigurations: false, 
-					extensions: [[$class: 'CheckoutOption', timeout: 15], [$class: 'CloneOption', depth: 0, noTags: false, reference: '', shallow: true, timeout: 15]],
-					submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'git-repo-ssh-access', url: "${distroRepoUrl}"]]]) */
+					/*	checkout([$class: 'GitSCM', branches: [[name: '${DISTRO_GIT_BRANCH}']], doGenerateSubmoduleConfigurations: false,
+					 extensions: [[$class: 'CheckoutOption', timeout: 15], [$class: 'CloneOption', depth: 0, noTags: false, reference: '', shallow: true, timeout: 15]],
+					 submoduleCfg: [], userRemoteConfigs: [[credentialsId: 'git-repo-ssh-access', url: "${distroRepoUrl}"]]]) */
 				}
 			}
 			else {
@@ -111,9 +111,7 @@ node {
 			}
 		}
 
-		stage('Docker Clean'){
-			utils.removeImages(artifactName)
-		}
+		stage('Docker Clean'){ utils.removeImages(artifactName) }
 
 		stage('Docker Build'){
 			dir('demandplannerapi') {
@@ -151,11 +149,13 @@ node {
 		}
 
 		// TODO: if GIT_IMAGE_PUSH.toBoolean() is true, then only we get latest image. Hence here add if (GIT_IMAGE_PUSH.toBoolean()) true condition.
-		stage('Save Image to QA'){
-			utils.saveImage(distroDirPath, artifactName, releasedVersion, "10.0.31.242")
-			//versions = input message: 'Choose testload version!', ok: 'SET', parameters: [choice(name: 'TESTLOAD_VERSION', choices: "${version_collection}", description: '')]
-			
-			//sh 'ssh -t centos@10.0.31.242 "ls && sudo docker load -i ${artifactName}-${releasedVersion}.tar" '
+		if (GIT_IMAGE_PUSH.toBoolean()) {
+			stage('Save Image to QA'){
+				utils.saveImage(distroDirPath, artifactName, releasedVersion, "10.0.31.242")
+				//versions = input message: 'Choose testload version!', ok: 'SET', parameters: [choice(name: 'TESTLOAD_VERSION', choices: "${version_collection}", description: '')]
+
+				//sh 'ssh -t centos@10.0.31.242 "ls && sudo docker load -i ${artifactName}-${releasedVersion}.tar" '
+			}
 		}
 
 	}catch (error) {

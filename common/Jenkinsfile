@@ -73,11 +73,7 @@ node {
 				def releasedVersion = utils.getReleasedVersion("common")
 				sshagent (credentials: ['git-repo-ssh-access']) {
 						dir('common') {
-							sh "ls -l"
-							sh "git remote set-url origin ${commonRepoUrl}"
-							//sh "git tag ${IMAGE_BRANCH_PREFIX}-${BUILD_NUMBER}"
-							sh "git tag ${releasedVersion}-${BUILD_NUMBER}"
-							sh "git push --tags"
+							utils.tagBranch(commonRepoUrl, releasedVersion)
 						}
 				}
 		    }
@@ -85,7 +81,7 @@ node {
 	}catch (error) {
 		println error
 		// If there was an exception thrown, the build failed
-		currentBuild.result = 'FAILED'
+		currentBuild.result = 'FAILURE'
 		throw error
 	} finally {
 		// Success or failure, always send notifications
