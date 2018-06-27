@@ -11,8 +11,8 @@ node {
 			choice(choices: ["master", "develop"].join("\n"), description: 'Distro Branch Name', name: 'DISTRO_GIT_BRANCH'),
 			choice(choices: ["dev", "qa"].join("\n"), description: 'Properties Environment', name: 'PROP_ENV'),
 			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Image store required or not'),
-			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not')
-			booleanParam(name: 'NG_BUILD', defaultValue: false,	description: 'ng build required or not'),
+			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not'),
+			booleanParam(name: 'NG_BUILD', defaultValue: false,	description: 'ng build required or not')
 		]),
 		pipelineTriggers([
 			//pollSCM('H/15 * * * *'),
