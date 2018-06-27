@@ -29,7 +29,7 @@ node {
 		env.PATH="${env.PATH}:${nodeHome}/bin"
 		def uiRepoUrl = 'ssh://git@innersource.accenture.com/appq/demandplannerui.git'
 		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_ui.git'
-		def distroDirPath = "/tmp/jenkins/distro"
+		def distroDirPath = "/tmp/jenkins/distro_ui"
 		def sonarqubeScannerHome = tool 'SonarQubeScanner_V3'
 		def artifactName = 'demandplannerui'
 		// TODO: dynamically fetch from package.json

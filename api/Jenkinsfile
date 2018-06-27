@@ -32,7 +32,7 @@ node {
 		def apiRepoUrl = 'ssh://git@innersource.accenture.com/appq/demandplannerapi.git'
 		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_api.git'
 		def devopsRepoUrl = 'ssh://git@innersource.accenture.com/appq/devops.git'
-		def distroDirPath = "/tmp/jenkins/distro"
+		def distroDirPath = "/tmp/jenkins/distro_api"
 		def artifactName
 		def releasedVersion
 
