@@ -7,7 +7,7 @@ node {
 			[$class: 'LogRotator', numToKeepStr: '3']],
 		disableConcurrentBuilds(),
 		parameters([
-			choice(choices: ["feature/ngbuildfix", "develop", "master"].join("\n"), description: 'API Branch Name', name: 'UI_GIT_BRANCH'),
+			choice(choices: ["develop", "master", "feature/ngbuildfix"].join("\n"), description: 'API Branch Name', name: 'UI_GIT_BRANCH'),
 			choice(choices: ["master", "develop"].join("\n"), description: 'Distro Branch Name', name: 'DISTRO_GIT_BRANCH'),
 			choice(choices: ["dev", "qa"].join("\n"), description: 'Properties Environment', name: 'PROP_ENV'),
 			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Image store required or not'),
