@@ -70,17 +70,13 @@ node {
 			//npm install -g npm@4.0.3 @angular/cli@1.0.4
 			//npm install -g npm@5.6.0 @angular/cli@~1.7.3
 			// TODO: //ng lint Update her about ng lint
-			try {
-				dir('demandplannerui') { sh '''
-						 node --version
-						 npm --version
-						 npm install -g npm@5.6.0 @angular/cli@~1.7.3
-						 npm install
-						 ng build --prod --aot
-					'''   }
-			}catch (err) {
-				echo "NPM Build Stage Caught: ${err}"
-			}
+			dir('demandplannerui') { sh '''
+						node --version
+						npm --version
+						npm install -g npm@5.6.0 @angular/cli@~1.7.3
+						npm install
+						ng build --prod --aot
+				'''   }
 		}
 
 		// TODO: skipping testing as of now
