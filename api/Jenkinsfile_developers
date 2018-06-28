@@ -25,7 +25,7 @@ node {
 	try {
 		// =========== USER DEFINED VARS ===========
 		def workspacePath = pwd()
-		echo "${workspacePath}"
+		echo "workspacePath: ${workspacePath}"
 		def mvnHome = tool name: "Maven_V3"
 		env.PATH = "${mvnHome}/bin:${env.PATH}"
 		def apiRepoUrl = 'ssh://git@innersource.accenture.com/appq/demandplannerapi.git'
@@ -38,7 +38,7 @@ node {
 		// =========== USER DEFINED VARS ===========
 
 		stage('Git Checkout') {
-			utils.sourceCodeCheckout(applicationDir, branchName, uiRepoUrl, distroDirPath, distroRepoUrl)
+			utils.sourceCodeCheckout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl)
 		}
 
 		stage ('Maven Build') {
