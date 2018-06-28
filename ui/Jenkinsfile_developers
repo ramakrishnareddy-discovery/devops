@@ -6,9 +6,9 @@ node {
 		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '3']],
 		disableConcurrentBuilds(),
 		parameters([
-			string(name: 'MAJOR_VERSION', description: ''),
-			string(name: 'MINOR_VERSION', description: ''),
-			string(name: 'GIT_BRANCH', description: 'API Branch Name'),
+			string(name: 'MAJOR_VERSION', description: '', defaultValue: "0"),
+			string(name: 'MINOR_VERSION', description: '', defaultValue: "0"),
+			string(name: 'GIT_BRANCH', description: 'API Branch Name', defaultValue: "develop"),
 			choice(choices: ["dev", "qa"].join("\n"), description: 'Properties Environment', name: 'PROP_ENV'),
 			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Save image to a tar archive'),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not')
@@ -16,7 +16,7 @@ node {
 	]
 	projectProperties.add(pipelineTriggers([cron('H 21 * * *')]))
 
-		properties(projectProperties)
+	properties(projectProperties)
 
 	Utils utils = new Utils()
 
