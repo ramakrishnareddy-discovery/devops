@@ -7,8 +7,6 @@ node {
 		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '3']],
 		disableConcurrentBuilds(),
 		parameters([
-			string(name: 'MAJOR_VERSION', description: '', defaultValue: "0"),
-			string(name: 'MINOR_VERSION', description: '', defaultValue: "0"),
 			string(name: 'GIT_BRANCH', description: 'API Branch Name', defaultValue: "develop"),
 			choice(choices: ["dev", "qa"].join("\n"), description: 'Properties Environment', name: 'PROP_ENV'),
 			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Save image to a tar archive'),
@@ -32,7 +30,7 @@ node {
 		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_api.git'
 		def distroDirPath = "/tmp/jenkins/distro_api"
 		def applicationDir = "demandplannerapi"
-		def releasedVersion = "${MAJOR_VERSION}.${MINOR_VERSION}"
+		def releasedVersion
 		def branchName = "${GIT_BRANCH}"
 		def artifactName 
 		// =========== USER DEFINED VARS ===========
@@ -40,6 +38,7 @@ node {
 		stage('Git Checkout') {
 			utils.sourceCodeCheckout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl)
 			artifactName = utils.getArtifact("demandplannerapi")
+			releasedVersion = utils.getReleasedVersion("demandplannerapi")
 		}
 
 		stage ('Maven Build') {
@@ -59,7 +58,7 @@ node {
 			utils.processQualityGate() 
 		}
 
-		stage('Docker Clean'){ utils.removeImages(artifactName) }
+		stage('Docker Clean'){ utils.removeImages(artifactName, releasedVersion) }
 
 		stage('Docker Build'){
 			dir('demandplannerapi') {
