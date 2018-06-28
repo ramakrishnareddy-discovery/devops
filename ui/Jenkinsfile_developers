@@ -23,7 +23,6 @@ node {
 
 	try {
 		// =========== USER DEFINED VARS ===========
-		def workspacePath = pwd()
 		def nodeHome = tool 'NodeJS_V8'
 		env.PATH="${env.PATH}:${nodeHome}/bin"
 		def uiRepoUrl = 'ssh://git@innersource.accenture.com/appq/demandplannerui.git'
@@ -33,9 +32,6 @@ node {
 		def releasedVersion = "${MAJOR_VERSION}.${MINOR_VERSION}"
 		def branchName = "${GIT_BRANCH}"
 		// =========== USER DEFINED VARS ===========
-
-		//workspacePath: /var/lib/jenkins/workspace/DemandPlannerUi-DeployToDev
-		echo "workspacePath: ${workspacePath}"
 
 		stage('Git Checkout') {
 			utils.sourceCodeCheckout('demandplannerui', branchName, uiRepoUrl, distroDirPath, distroRepoUrl)
@@ -95,8 +91,10 @@ node {
 def npmBuild(branchName, repoUrl) {
 	//ng build generated 'dist' folder. To avoid putting 'dist' folder in  'demandplannerui'
 	dir('demandplannerui_npmbuild') {
+		def workspacePath = pwd()
+		sh "cp ${workspacePath}/demandplannerui .""
+		
 		sh '''
-				cp ${workspacePath}/demandplannerui .
 				node --version
 				npm --version
 				npm install -g npm@5.6.0 @angular/cli@~1.7.3
