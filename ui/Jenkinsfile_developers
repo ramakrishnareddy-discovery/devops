@@ -40,16 +40,16 @@ node {
 			utils.sourceCodeCheckout('demandplannerui', branchName, uiRepoUrl, distroDirPath, distroRepoUrl)
 		}
 
-		stage('NPM Build') { utils.npmBuild(branchName, uiRepoUrl,) }
+		stage('NPM Build') { utils.npmBuild(branchName, uiRepoUrl) }
 
 		stage('SonarQube Analysis') { utils.uicodeQualityAnalysis('demandplannerui_npmbuild') }
 
 		// Configure a webhook in your SonarQube server pointing to <your Jenkins instance>/sonarqube-webhook/
 		stage("SonarQube Quality Gate") { utils.processQualityGate() }
 
-		stage('Docker Clean'){ utils.removeImages(artifactName) }
+		stage('Docker Clean') { utils.removeImages(artifactName) }
 
-		stage('Docker Build'){
+		stage('Docker Build') {
 			utils.build('demandplannerui', artifactName, releasedVersion)
 		}
 
