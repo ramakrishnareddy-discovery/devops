@@ -7,16 +7,14 @@ node {
 		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '3']],
 		disableConcurrentBuilds(),
 		parameters([
-			string(name: 'MAJOR_VERSION'),
-			string(name: 'MINOR_VERSION'),
+			string(name: 'MAJOR_VERSION', description: ''),
+			string(name: 'MINOR_VERSION', description: ''),
 			string(name: 'GIT_BRANCH', description: 'API Branch Name'),
 			choice(choices: ["dev", "qa"].join("\n"), description: 'Properties Environment', name: 'PROP_ENV'),
 			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Save image to a tar archive'),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not')
 		]),
 	]
-	//projectProperties.add(pipelineTriggers([pollSCM('H/15 * * * *')]))
-	//@yearly, @annually, @monthly, @weekly, @daily, @midnight, and @hourly
 	projectProperties.add(pipelineTriggers([cron('H 21 * * *')]))
 
 	properties(projectProperties)
@@ -31,80 +29,21 @@ node {
 		def uiRepoUrl = 'ssh://git@innersource.accenture.com/appq/demandplannerui.git'
 		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_ui.git'
 		def distroDirPath = "/tmp/jenkins/distro_ui"
-		def sonarqubeScannerHome = tool 'SonarQubeScanner_V3'
 		def artifactName = 'demandplannerui'
 		def releasedVersion = "${MAJOR_VERSION}.${MINOR_VERSION}"
 		def branchName = "${GIT_BRANCH}"
 		// =========== USER DEFINED VARS ===========
 
-		echo "releasedVersion:${releasedVersion}"
-
 		stage('Git Checkout') {
 			utils.sourceCodeCheckout('demandplannerui', branchName, uiRepoUrl, distroDirPath, distroRepoUrl)
 		}
 
-		//This stage installs all of the node dependencies, performs linting and builds the code.
-		stage('NPM Build') {
-			// TODO: //ng lint Update her about ng lint
-			dir('demandplannerui_npmbuild') { sh '''
-							node --version
-							npm --version
-							npm install -g npm@5.6.0 @angular/cli@~1.7.3
-							npm install
-							ng build --prod --aot
-					'''   }
-		}
+		stage('NPM Build') { npmBuild(branchName, uiRepoUrl,) }
 
-		// TODO: skipping testing as of now
-		// TODO: npm test make necessary changes.Launching browser ChromeHeadless
-		/*
-		 stage ('NPM Test') {
-		 dir('demandplannerui') {
-		 try {sh 'npm test' }catch (err) {
-		 echo " NPM Test Stage Caught: ${err}"
-		 }}
-		 }*/
-
-		/* TODO: parameterize project version
-		 * " -Dsonar.projectKey=demo:demandplannerui"+
-		 * " -Dsonar.projectName=demandplannerui" +
-		 * " -Dsonar.projectVersion=V1" +
-		 *
-		 * add below line after "to include test"
-		 *
-		 */
-
-		stage('SonarQube Analysis') {
-			dir('demandplannerui_npmbuild') {
-				withSonarQubeEnv('SonarQube_V7') {
-					sh 'ls -l'
-					sh "${sonarqubeScannerHome}/bin/sonar-scanner" +
-							" -Dsonar.projectKey=demandplannerui" +
-							" -Dsonar.sources=src" +
-							" -Dsonar.exclusions=**/node_modules/**,**/*.spec.ts" +
-							" -Dsonar.tests=src" +
-							" -Dsonar.test.inclusions=**/*.spec.ts" +
-							" -Dsonar.ts.tslintconfigpath=tslint.json" +
-							" -Dsonar.ts.lcov.reportpath=test-results/coverage/coverage.lcov" +
-							" -Dsonar.sourceEncoding=UTF-8"
-				}
-			}
-		}
+		stage('SonarQube Analysis') { codeQualityAnalysis() }
 
 		// Configure a webhook in your SonarQube server pointing to <your Jenkins instance>/sonarqube-webhook/
-		stage("SonarQube Quality Gate") {
-			// Just in case something goes wrong, pipeline will be killed after a timeout
-			timeout(time: 2, unit: 'MINUTES') {
-				def qualityGate = waitForQualityGate() // Reuse taskId previously collected by withSonarQubeEnv
-				if (qualityGate.status != 'OK') {
-					//error "Pipeline aborted due to quality gate failure: ${qualityGate.status}"
-					println("SonarQube Quality Gate Failed.failure: ${qualityGate.status}")
-				} else
-				{
-					println("SonarQube Quality Gate Passed")
-				}
-			}
-		}
+		stage("SonarQube Quality Gate") { processQualityGate() }
 
 		stage('Docker Clean'){ utils.removeImages(artifactName) }
 
@@ -132,20 +71,12 @@ node {
 			sh "docker images"
 		}
 
-		//docker ps -a -q --filter=ancestor=sonarqube | xargs -I {} docker stop {}
-		//docker ps -a -q --filter=ancestor=sonarqube | xargs -I {} docker rm {}
 
 		//TODO: has to define PROP_ENV
 		stage('deploy to DEV'){
 			utils.deployUIToDev(artifactName, releasedVersion, PROP_ENV)
 		}
 
-		/*
-		 // if GIT_IMAGE_PUSH.toBoolean() is true, then only we get latest image. Hence here add if (GIT_IMAGE_PUSH.toBoolean()) true condition.
-		 if (GIT_IMAGE_PUSH.toBoolean()) {
-		 utils.saveImage(distroDirPath, artifactName, releasedVersion, "10.0.31.242")
-		 }
-		 */
 	}catch (error) {
 		println error
 		// If there was an exception thrown, the build failed
@@ -156,3 +87,87 @@ node {
 		utils.sendNotification(currentBuild.result)
 	}
 }
+
+//This stage installs all of the node dependencies, performs linting and builds the code.
+def npmBuild(branchName, repoUrl) {
+	//ng build generated 'dist' folder. To avoid putting 'dist' folder in  'demandplannerui'
+	dir('demandplannerui_npmbuild') {
+		git branch: "${branchName}",
+		credentialsId: 'git-repo-ssh-access',
+		url: "${repoUrl}"
+
+		sh '''
+							node --version
+							npm --version
+							npm install -g npm@5.6.0 @angular/cli@~1.7.3
+							npm install
+							ng build --prod --aot
+					'''   }
+}
+
+def codeQualityAnalysis() {
+	def sonarqubeScannerHome = tool 'SonarQubeScanner_V3'
+	dir('demandplannerui_npmbuild') {
+		withSonarQubeEnv('SonarQube_V7') {
+			sh 'ls -l'
+			sh "${sonarqubeScannerHome}/bin/sonar-scanner" +
+					" -Dsonar.projectKey=demandplannerui" +
+					" -Dsonar.sources=src" +
+					" -Dsonar.exclusions=**/node_modules/**,**/*.spec.ts" +
+					" -Dsonar.tests=src" +
+					" -Dsonar.test.inclusions=**/*.spec.ts" +
+					" -Dsonar.ts.tslintconfigpath=tslint.json" +
+					" -Dsonar.ts.lcov.reportpath=test-results/coverage/coverage.lcov" +
+					" -Dsonar.sourceEncoding=UTF-8"
+		}
+	}
+}
+
+def processQualityGate(){
+	// Just in case something goes wrong, pipeline will be killed after a timeout
+	timeout(time: 2, unit: 'MINUTES') {
+		def qualityGate = waitForQualityGate() // Reuse taskId previously collected by withSonarQubeEnv
+		if (qualityGate.status != 'OK') {
+			//error "Pipeline aborted due to quality gate failure: ${qualityGate.status}"
+			println("SonarQube Quality Gate Failed.failure: ${qualityGate.status}")
+		} else
+		{
+			println("SonarQube Quality Gate Passed")
+		}
+	}
+}
+
+
+
+/* $$$$$$$$$$$$$ 		FUTURE REFERENCE COMMENTED -- PLEASE DO NOT REMOVE
+ //projectProperties.add(pipelineTriggers([pollSCM('H/15 * * * *')]))
+ //@yearly, @annually, @monthly, @weekly, @daily, @midnight, and @hourly
+ // TODO: skipping testing as of now
+ // TODO: npm test make necessary changes.Launching browser ChromeHeadless
+ /*
+ stage ('NPM Test') {
+ dir('demandplannerui') {
+ try {sh 'npm test' }catch (err) {
+ echo " NPM Test Stage Caught: ${err}"
+ }}
+ }*/
+
+/* TODO: parameterize project version
+ * " -Dsonar.projectKey=demo:demandplannerui"+
+ * " -Dsonar.projectName=demandplannerui" +
+ * " -Dsonar.projectVersion=V1" +
+ *
+ * add below line after "to include test"
+ *
+ */
+
+//docker ps -a -q --filter=ancestor=sonarqube | xargs -I {} docker stop {}
+//docker ps -a -q --filter=ancestor=sonarqube | xargs -I {} docker rm {}
+
+
+/*
+ // if GIT_IMAGE_PUSH.toBoolean() is true, then only we get latest image. Hence here add if (GIT_IMAGE_PUSH.toBoolean()) true condition.
+ if (GIT_IMAGE_PUSH.toBoolean()) {
+ utils.saveImage(distroDirPath, artifactName, releasedVersion, "10.0.31.242")
+ }
+ */
