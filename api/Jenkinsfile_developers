@@ -31,14 +31,15 @@ node {
 		def apiRepoUrl = 'ssh://git@innersource.accenture.com/appq/demandplannerapi.git'
 		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_api.git'
 		def distroDirPath = "/tmp/jenkins/distro_api"
-		def artifactName = utils.getArtifact("demandplannerapi")
 		def applicationDir = "demandplannerapi"
 		def releasedVersion = "${MAJOR_VERSION}.${MINOR_VERSION}"
 		def branchName = "${GIT_BRANCH}"
+		def artifactName 
 		// =========== USER DEFINED VARS ===========
 
 		stage('Git Checkout') {
 			utils.sourceCodeCheckout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl)
+			artifactName = utils.getArtifact("demandplannerapi")
 		}
 
 		stage ('Maven Build') {
