@@ -89,6 +89,7 @@ node {
 
 //This stage installs all of the node dependencies, performs linting and builds the code.
 def npmBuild(branchName, repoUrl) {
+	def workspacePath=  pwd()
 	//ng build generated 'dist' folder. To avoid putting 'dist' folder in  'demandplannerui'
 	sh "mkdir ${workspacePath}/demandplannerui_npmbuild"
 	sh "cp ${workspacePath}/demandplannerui ${workspacePath}/demandplannerui_npmbuild"
