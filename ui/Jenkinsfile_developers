@@ -8,7 +8,7 @@ node {
 		parameters([
 			string(name: 'MAJOR_VERSION', description: '', defaultValue: "0"),
 			string(name: 'MINOR_VERSION', description: '', defaultValue: "0"),
-			string(name: 'GIT_BRANCH', description: 'API Branch Name', defaultValue: "develop"),
+			string(name: 'GIT_BRANCH', description: 'UI Branch Name', defaultValue: "develop"),
 			choice(choices: ["dev", "qa"].join("\n"), description: 'Properties Environment', name: 'PROP_ENV'),
 			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Save image to a tar archive'),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not')
@@ -29,6 +29,7 @@ node {
 		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_ui.git'
 		def distroDirPath = "/tmp/jenkins/distro_ui"
 		def artifactName = 'demandplannerui'
+		def applicationDir = 'demandplannerui'
 		def releasedVersion = "${MAJOR_VERSION}.${MINOR_VERSION}"
 		def branchName = "${GIT_BRANCH}"
 		// =========== USER DEFINED VARS ===========
@@ -36,7 +37,7 @@ node {
 		echo "workspacePath: ${workspacePath}"
 
 		stage('Git Checkout') {
-			utils.sourceCodeCheckout(artifactName, branchName, uiRepoUrl, distroDirPath, distroRepoUrl)
+			utils.sourceCodeCheckout(applicationDir, branchName, uiRepoUrl, distroDirPath, distroRepoUrl)
 		}
 
 		stage('NPM Build') { utils.npmBuild('demandplannerui_npmbuild', branchName, uiRepoUrl) }
@@ -48,18 +49,18 @@ node {
 		stage('Docker Clean') { utils.removeImages(artifactName) }
 
 		stage('Docker Build') {
-			utils.build(artifactName, artifactName, releasedVersion)
+			utils.uiDockerBuild(applicationDir, artifactName, releasedVersion)
 		}
 
 		if (GIT_IMAGE_PUSH.toBoolean()) {
 			stage('Save Image to Tar Archive') {
-				utils.pushImageToRepo(artifactName, distroDirPath, artifactName, releasedVersion )
+				utils.pushImageToRepo(applicationDir, distroDirPath, artifactName, releasedVersion )
 			}
 		}
 
 		if (GIT_TAG.toBoolean()) {
 			stage('Tag Branch') {
-				utils.tagBranch(artifactName,uiRepoUrl, releasedVersion)
+				utils.tagBranch(applicationDir, uiRepoUrl, releasedVersion)
 			}
 			sh "docker images"
 		}

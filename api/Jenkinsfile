@@ -32,7 +32,6 @@ node {
 		env.PATH = "${mvnHome}/bin:${env.PATH}"
 		def apiRepoUrl = 'ssh://git@innersource.accenture.com/appq/demandplannerapi.git'
 		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_api.git'
-		def devopsRepoUrl = 'ssh://git@innersource.accenture.com/appq/devops.git'
 		def distroDirPath = "/tmp/jenkins/distro_api"
 		def artifactName
 		def releasedVersion
@@ -53,12 +52,6 @@ node {
 
 			echo "artifactName:${artifactName}"
 			echo "releasedVersion:${releasedVersion}"
-
-			dir('devops') {
-				git branch: 'master',
-				credentialsId: 'git-repo-ssh-access',
-				url: "${devopsRepoUrl}"
-			}
 
 			// Check for directory
 			if(!fileExists(distroDirPath))
