@@ -35,7 +35,7 @@ node {
 		// =========== USER DEFINED VARS ===========
 
 		echo "workspacePath: ${workspacePath}"
-		
+
 		stage('Git Checkout') {
 			utils.sourceCodeCheckout('demandplannerui', branchName, uiRepoUrl, distroDirPath, distroRepoUrl)
 		}
