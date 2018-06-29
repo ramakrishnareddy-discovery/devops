@@ -39,6 +39,7 @@ node {
 			utils.sourceCodeCheckout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl)
 			artifactName = utils.getArtifact("demandplannerapi")
 			releasedVersion = utils.getReleasedVersion("demandplannerapi")
+			echo "releasedVersion:${releasedVersion}"
 		}
 
 		stage ('Maven Build') {
