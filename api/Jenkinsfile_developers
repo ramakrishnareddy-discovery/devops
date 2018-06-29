@@ -1,7 +1,7 @@
 #!/usr/bin/env groovy
 @Library('JenkinsSharedLibrary') _
 
-//node("jenkins-slave") 
+//node("jenkins-slave")
 node {
 	def projectProperties = [
 		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '3']],
@@ -19,7 +19,7 @@ node {
 	properties(projectProperties)
 
 	Utils utils = new Utils()
-	
+
 	try {
 		// =========== USER DEFINED VARS ===========
 		def workspacePath = pwd()
@@ -32,7 +32,7 @@ node {
 		def applicationDir = "demandplannerapi"
 		def releasedVersion
 		def branchName = "${GIT_BRANCH}"
-		def artifactName 
+		def artifactName
 		// =========== USER DEFINED VARS ===========
 
 		stage('Git Checkout') {
@@ -54,9 +54,7 @@ node {
 			}
 		}
 
-		stage("SonarQube Quality Gate") {
-			utils.processQualityGate() 
-		}
+		stage("SonarQube Quality Gate") { utils.processQualityGate() }
 
 		stage('Docker Clean'){ utils.removeImages(artifactName, releasedVersion) }
 
@@ -81,7 +79,7 @@ node {
 			sh "docker images"
 		}
 
-		
+
 		stage('deploy to DEV'){
 			utils.deployAPIToDev(artifactName, releasedVersion, PROP_ENV)
 		}
