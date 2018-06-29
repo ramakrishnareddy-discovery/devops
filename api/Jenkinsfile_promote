@@ -34,13 +34,8 @@ node {
 		stage('Docker Clean'){ utils.removeImages(artifactName) }
 
 		stage('deploy'){
-			utils.deployAPI(distroDirPath, artifactName, null, destinationIP)
+			utils.promoteAPIToEnv(distroDirPath, artifactName, null, destinationIP)
 		}
-
-		stage('Deploy'){
-
-		}
-
 	}catch (error) {
 		println error
 		// If there was an exception thrown, the build failed

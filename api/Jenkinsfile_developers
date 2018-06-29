@@ -82,7 +82,6 @@ node {
 			sh "docker images"
 		}
 
-
 		stage('deploy to DEV'){
 			utils.deployAPIToDev(artifactName, releasedVersion, PROP_ENV)
 		}
