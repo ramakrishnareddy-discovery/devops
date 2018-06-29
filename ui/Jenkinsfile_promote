@@ -45,7 +45,7 @@ node {
 		throw error
 	} finally {
 		// Success or failure, always send notifications
-		utils.promotionNotification(currentBuild.result, 'true')
+		utils.sendNotification(currentBuild.result, 'true')
 	}
 }
 
