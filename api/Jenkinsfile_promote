@@ -33,7 +33,6 @@ node {
 			utils.distroCheckout(distroDirPath, distroRepoUrl)
 		}
 		
-		// TODO: has to log on to destination box and execute there
 		stage('Docker Clean'){ utils.removeDanglingImages(artifactName, destinationIP) }
 
 		stage('deploy'){
@@ -46,7 +45,7 @@ node {
 		throw error
 	} finally {
 		// Success or failure, always send notifications
-		utils.sendNotification(currentBuild.result)
+		utils.promotionNotification(currentBuild.result, 'true')
 	}
 }
 
