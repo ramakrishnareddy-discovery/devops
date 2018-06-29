@@ -36,7 +36,7 @@ node {
 		// =========== USER DEFINED VARS ===========
 
 		checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl,utils)
-		
+			// Since artifactName and releasedVersion fetching from POM.xml, should execute after cloning the repo.
 			def artifactName = utils.getArtifact("demandplannerapi")
 			def releasedVersion = utils.getReleasedVersion("demandplannerapi")
         
