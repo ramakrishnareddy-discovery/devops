@@ -31,14 +31,16 @@ node {
 		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_api.git'
 		def distroDirPath = "/tmp/jenkins/distro_api"
 		def applicationDir = "demandplannerapi"
-		def releasedVersion
 		def branchName = "${GIT_BRANCH}"
-		def artifactName
 		def destinationIP = "${DESTINATION_IP}"
 		// =========== USER DEFINED VARS ===========
 
 		checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl,utils)
-        build()
+		
+			def artifactName = utils.getArtifact("demandplannerapi")
+			def releasedVersion = utils.getReleasedVersion("demandplannerapi")
+        
+		build()
         sonarScanner()
         allCodeQualityTests(utils)
 		dockerClean(artifactName,utils)
@@ -63,8 +65,7 @@ node {
 def checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl,utils) {
 	stage('Git Checkout') {
 			utils.sourceCodeCheckout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl)
-			artifactName = utils.getArtifact("demandplannerapi")
-			releasedVersion = utils.getReleasedVersion("demandplannerapi")
+			
 			echo "releasedVersion:${releasedVersion}"
 		}
 }
