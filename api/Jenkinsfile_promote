@@ -34,7 +34,7 @@ node {
 		}
 		
 		// TODO: has to log on to destination box and execute there
-		stage('Docker Clean'){ utils.removeDanglingImages(destinationIP) }
+		stage('Docker Clean'){ utils.removeDanglingImages(artifactName, destinationIP) }
 
 		stage('deploy'){
 			utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP)
