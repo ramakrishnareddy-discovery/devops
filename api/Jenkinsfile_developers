@@ -57,7 +57,7 @@ node {
 
 		stage("SonarQube Quality Gate") { utils.processQualityGate() }
 
-		stage('Docker Clean'){ utils.removeImages(artifactName, releasedVersion) }
+		stage('Docker Clean'){ utils.removeImages(artifactName) }
 
 		stage('Docker Build'){
 			dir('demandplannerapi') {
@@ -84,6 +84,7 @@ node {
 		stage('deploy to DEV'){
 			utils.deployAPIToDev(artifactName, releasedVersion, PROP_ENV)
 		}
+
 	}catch (error) {
 		println error
 		// If there was an exception thrown, the build failed

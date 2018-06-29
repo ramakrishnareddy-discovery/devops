@@ -46,7 +46,7 @@ node {
 
 		stage("SonarQube Quality Gate") { utils.processQualityGate() }
 
-		stage('Docker Clean') { utils.removeImages(artifactName, null) }
+		stage('Docker Clean') { utils.removeImages(artifactName) }
 
 		stage('Docker Build') {
 			utils.uiDockerBuild(applicationDir, artifactName, releasedVersion)
