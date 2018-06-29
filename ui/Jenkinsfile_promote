@@ -33,8 +33,7 @@ node {
 			utils.distroCheckout(distroDirPath, distroRepoUrl)
 		}
 		
-		// TODO: has to log on to destination box and execute there
-		stage('Docker Clean'){ utils.removeImages(artifactName) }
+		stage('Docker Clean'){ utils.removeDanglingImages(artifactName, destinationIP) }
 
 		stage('deploy'){
 			utils.promoteUIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP)

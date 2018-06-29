@@ -31,66 +31,24 @@ node {
 		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_api.git'
 		def distroDirPath = "/tmp/jenkins/distro_api"
 		def applicationDir = "demandplannerapi"
-		def releasedVersion
 		def branchName = "${GIT_BRANCH}"
-		def artifactName
 		def destinationIP = "${DESTINATION_IP}"
 		// =========== USER DEFINED VARS ===========
 
-		stage('Git Checkout') {
-			utils.sourceCodeCheckout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl)
-			artifactName = utils.getArtifact("demandplannerapi")
-			releasedVersion = utils.getReleasedVersion("demandplannerapi")
-			echo "releasedVersion:${releasedVersion}"
-		}
-
-		stage ('Maven Build') {
-			dir('demandplannerapi') { sh "mvn clean install -Dmaven.test.skip=true" }
-		}
-
-		stage ('Junit Test') { dir('demandplannerapi') {sh "mvn test" }}
-
-		stage('SonarQube Analysis') {
-			dir('demandplannerapi') {
-				withSonarQubeEnv('SonarQube_V7') { // SonarQube taskId is automatically attached to the pipeline context
-					sh "mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.3.0.603:sonar" }
-			}
-		}
-
-		stage("SonarQube Quality Gate") { utils.processQualityGate() }
-
-		stage('Docker Clean'){ utils.removeImages(artifactName) }
-
-		stage('Docker Build'){
-			dir('demandplannerapi') {
-				echo "Starting Docker Image Creation..."
-				sh "mvn docker:build"
-				echo "Docker Image Creation Complted..."
-			}
-		}
-
-		if (GIT_IMAGE_PUSH.toBoolean()) {
-			stage('Save Image to Tar Archive') {
-				utils.pushImageToRepo(applicationDir, distroDirPath, artifactName, releasedVersion )
-			}
-		}
-
-		if (GIT_TAG.toBoolean()) {
-			stage('Tag Branch') {
-				utils.tagBranch(applicationDir, apiRepoUrl, releasedVersion)
-			}
-			sh "docker images"
-		}
-
-		stage('deploy to DEV'){
-			utils.deployAPIToDev(artifactName, releasedVersion, PROP_ENV)
-		}
-
-		stage('load Image'){
-			if (GIT_IMAGE_PUSH.toBoolean()) {
-				utils.loadImage(distroDirPath, artifactName, releasedVersion, destinationIP)
-			}
-		}
+		checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl,utils)
+			// Since artifactName and releasedVersion fetching from POM.xml, should execute after cloning the repo.
+			def artifactName = utils.getArtifact("demandplannerapi")
+			def releasedVersion = utils.getReleasedVersion("demandplannerapi")
+        
+		build()
+        sonarScanner()
+        allCodeQualityTests(utils)
+		dockerClean(artifactName,utils)
+		dockerBuild()
+        saveImage(applicationDir, distroDirPath, artifactName, releasedVersion,GIT_IMAGE_PUSH, utils)
+		tagBranch(applicationDir, apiRepoUrl, releasedVersion,GIT_TAG, utils)
+        dev(artifactName, releasedVersion, PROP_ENV, utils)
+		loadImage(distroDirPath, artifactName, releasedVersion, destinationIP,GIT_IMAGE_PUSH, utils)	
 		
 	}catch (error) {
 		println error
@@ -104,3 +62,76 @@ node {
 }
 
 
+def checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl,utils) {
+	stage('Git Checkout') {
+			utils.sourceCodeCheckout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl)
+		}
+}
+
+def build() {
+	stage ('Maven Build') {
+			dir('demandplannerapi') { sh "mvn clean install -Dmaven.test.skip=true" }
+		}
+}
+
+def allTests() {
+	stage ('Junit Test') { dir('demandplannerapi') {sh "mvn test" }}
+}
+
+def sonarScanner() {
+		stage('SonarQube Analysis') {
+			dir('demandplannerapi') {
+				withSonarQubeEnv('SonarQube_V7') { // SonarQube taskId is automatically attached to the pipeline context
+					sh "mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.3.0.603:sonar" }
+			}
+		}
+}
+
+def allCodeQualityTests(utils) {
+	stage("SonarQube Quality Gate") { utils.processQualityGate() }
+}
+
+def dockerClean(artifactName,utils) {
+	stage('Docker Clean'){ utils.removeImages(artifactName) }
+}
+
+def dockerBuild() {
+	stage('Docker Build'){
+			dir('demandplannerapi') {
+				echo "Starting Docker Image Creation..."
+				sh "mvn docker:build"
+				echo "Docker Image Creation Complted..."
+			}
+		}
+}
+
+def saveImage(applicationDir, distroDirPath, artifactName, releasedVersion,GIT_IMAGE_PUSH, utils) {
+	if (GIT_IMAGE_PUSH.toBoolean()) {
+			stage('Save Image to Tar Archive') {
+				utils.pushImageToRepo(applicationDir, distroDirPath, artifactName, releasedVersion)
+			}
+		}
+}
+
+def tagBranch(applicationDir, apiRepoUrl, releasedVersion,GIT_TAG, utils) {
+	if (GIT_TAG.toBoolean()) {
+			stage('Tag Branch') {
+				utils.tagBranch(applicationDir, apiRepoUrl, releasedVersion)
+			}
+			sh "docker images"
+		}
+}
+
+def dev(artifactName, releasedVersion, PROP_ENV, utils) {
+		stage('deploy to DEV'){
+			utils.deployAPIToDev(artifactName, releasedVersion, PROP_ENV)
+		}
+}
+
+def loadImage(distroDirPath, artifactName, releasedVersion, destinationIP,GIT_IMAGE_PUSH, utils) {
+		stage('load Image'){
+			if (GIT_IMAGE_PUSH.toBoolean()) {
+				utils.loadImage(distroDirPath, artifactName, releasedVersion, destinationIP)
+			}
+		}
+}
