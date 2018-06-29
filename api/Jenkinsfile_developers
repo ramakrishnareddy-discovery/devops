@@ -9,6 +9,7 @@ node {
 		parameters([
 			string(name: 'GIT_BRANCH', description: 'API Branch Name', defaultValue: "master"),
 			choice(choices: ["dev", "qa"].join("\n"), description: 'Properties Environment', name: 'PROP_ENV'),
+			string(name: 'DESTINATION_IP', description: 'IP of promotion env', defaultValue: "10.0.31.242"),
 			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Save image to a tar archive'),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not')
 		]),
@@ -33,6 +34,7 @@ node {
 		def releasedVersion
 		def branchName = "${GIT_BRANCH}"
 		def artifactName
+		def destinationIP = "${DESTINATION_IP}"
 		// =========== USER DEFINED VARS ===========
 
 		stage('Git Checkout') {
@@ -85,6 +87,12 @@ node {
 			utils.deployAPIToDev(artifactName, releasedVersion, PROP_ENV)
 		}
 
+		stage('load Image'){
+			if (GIT_IMAGE_PUSH.toBoolean()) {
+				utils.loadImage(distroDirPath, artifactName, releasedVersion, destinationIP)
+			}
+		}
+		
 	}catch (error) {
 		println error
 		// If there was an exception thrown, the build failed
