@@ -36,7 +36,7 @@ node {
 		stage('Docker Clean'){ utils.removeImages(artifactName) }
 
 		stage('deploy'){
-			utils.promoteAPIToEnv(artifactName, null, PROP_ENV, destinationIP)
+			utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP)
 		}
 	}catch (error) {
 		println error
