@@ -70,6 +70,12 @@ node {
 			utils.deployUIToDev(artifactName, releasedVersion, PROP_ENV)
 		}
 
+		stage('load Image'){
+			if (GIT_IMAGE_PUSH.toBoolean()) {
+				utils.loadImage(distroDirPath, artifactName, releasedVersion, destinationIP)
+			}
+		}
+
 	}catch (error) {
 		println error
 		// If there was an exception thrown, the build failed
