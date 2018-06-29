@@ -1,0 +1,106 @@
+#!/usr/bin/env groovy
+@Library('JenkinsSharedLibrary') _
+
+//node("jenkins-slave")
+node {
+	def projectProperties = [
+		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '3']],
+		disableConcurrentBuilds(),
+		parameters([
+			string(name: 'GIT_BRANCH', description: 'API Branch Name', defaultValue: "master"),
+			choice(choices: ["dev", "qa"].join("\n"), description: 'Properties Environment', name: 'PROP_ENV'),
+			string(name: 'DESTINATION_IP', description: 'IP of promotion env', defaultValue: "10.0.31.242"),
+			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Save image to a tar archive'),
+			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not')
+		]),
+	]
+	projectProperties.add(pipelineTriggers([upstream(threshold: hudson.model.Result.SUCCESS,upstreamProjects: "common")]))
+	//projectProperties.add(pipelineTriggers([cron('H 21 * * *')]))
+
+	properties(projectProperties)
+
+	Utils utils = new Utils()
+
+	try {
+		// =========== USER DEFINED VARS ===========
+		def workspacePath = pwd()
+		echo "workspacePath: ${workspacePath}"
+		def mvnHome = tool name: "Maven_V3"
+		env.PATH = "${mvnHome}/bin:${env.PATH}"
+		def apiRepoUrl = 'ssh://git@innersource.accenture.com/appq/demandplannerapi.git'
+		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_api.git'
+		def distroDirPath = "/tmp/jenkins/distro_api"
+		def applicationDir = "demandplannerapi"
+		def releasedVersion
+		def branchName = "${GIT_BRANCH}"
+		def artifactName
+		def destinationIP = "${DESTINATION_IP}"
+		// =========== USER DEFINED VARS ===========
+
+		stage('Git Checkout') {
+			utils.sourceCodeCheckout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl)
+			artifactName = utils.getArtifact("demandplannerapi")
+			releasedVersion = utils.getReleasedVersion("demandplannerapi")
+			echo "releasedVersion:${releasedVersion}"
+		}
+
+		stage ('Maven Build') {
+			dir('demandplannerapi') { sh "mvn clean install -Dmaven.test.skip=true" }
+		}
+
+		stage ('Junit Test') { dir('demandplannerapi') {sh "mvn test" }}
+
+		stage('SonarQube Analysis') {
+			dir('demandplannerapi') {
+				withSonarQubeEnv('SonarQube_V7') { // SonarQube taskId is automatically attached to the pipeline context
+					sh "mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.3.0.603:sonar" }
+			}
+		}
+
+		stage("SonarQube Quality Gate") { utils.processQualityGate() }
+
+		stage('Docker Clean'){ utils.removeImages(artifactName) }
+
+		stage('Docker Build'){
+			dir('demandplannerapi') {
+				echo "Starting Docker Image Creation..."
+				sh "mvn docker:build"
+				echo "Docker Image Creation Complted..."
+			}
+		}
+
+		if (GIT_IMAGE_PUSH.toBoolean()) {
+			stage('Save Image to Tar Archive') {
+				utils.pushImageToRepo(applicationDir, distroDirPath, artifactName, releasedVersion )
+			}
+		}
+
+		if (GIT_TAG.toBoolean()) {
+			stage('Tag Branch') {
+				utils.tagBranch(applicationDir, apiRepoUrl, releasedVersion)
+			}
+			sh "docker images"
+		}
+
+		stage('deploy to DEV'){
+			utils.deployAPIToDev(artifactName, releasedVersion, PROP_ENV)
+		}
+
+		stage('load Image'){
+			if (GIT_IMAGE_PUSH.toBoolean()) {
+				utils.loadImage(distroDirPath, artifactName, releasedVersion, destinationIP)
+			}
+		}
+		
+	}catch (error) {
+		println error
+		// If there was an exception thrown, the build failed
+		currentBuild.result = 'FAILURE'
+		throw error
+	} finally {
+		// Success or failure, always send notifications
+		utils.sendNotification(currentBuild.result)
+	}
+}
+
+

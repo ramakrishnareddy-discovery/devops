@@ -1,0 +1,90 @@
+#!/usr/bin/env groovy
+@Library('JenkinsSharedLibrary') _
+
+node {
+	def projectProperties = [
+		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '3']],
+		disableConcurrentBuilds(),
+		parameters([
+			string(name: 'MAJOR_VERSION', description: '', defaultValue: "0"),
+			string(name: 'MINOR_VERSION', description: '', defaultValue: "0"),
+			string(name: 'GIT_BRANCH', description: 'UI Branch Name', defaultValue: "develop"),
+			choice(choices: ["dev", "qa"].join("\n"), description: 'Properties Environment', name: 'PROP_ENV'),
+			string(name: 'DESTINATION_IP', description: 'IP of promotion env', defaultValue: "10.0.31.242"),
+			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Save image to a tar archive'),
+			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not')
+		]),
+	]
+	//projectProperties.add(pipelineTriggers([cron('H 21 * * *')]))
+
+	properties(projectProperties)
+
+	Utils utils = new Utils()
+
+	try {
+		// =========== USER DEFINED VARS ===========
+		def workspacePath = pwd()
+		def nodeHome = tool 'NodeJS_V8'
+		env.PATH="${env.PATH}:${nodeHome}/bin"
+		def uiRepoUrl = 'ssh://git@innersource.accenture.com/appq/demandplannerui.git'
+		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_ui.git'
+		def distroDirPath = "/tmp/jenkins/distro_ui"
+		def artifactName = 'demandplannerui'
+		def applicationDir = 'demandplannerui'
+		def releasedVersion = "${MAJOR_VERSION}.${MINOR_VERSION}"
+		def branchName = "${GIT_BRANCH}"
+		def destinationIP = "${DESTINATION_IP}"
+		// =========== USER DEFINED VARS ===========
+
+		echo "workspacePath: ${workspacePath}"
+
+		stage('Git Checkout') {
+			utils.sourceCodeCheckout(applicationDir, branchName, uiRepoUrl, distroDirPath, distroRepoUrl)
+		}
+
+		stage('NPM Build') { utils.npmBuild('demandplannerui_npmbuild', branchName, uiRepoUrl) }
+
+		stage('SonarQube Analysis') { utils.uiCodeQualityAnalysis('demandplannerui_npmbuild') }
+
+		stage("SonarQube Quality Gate") { utils.processQualityGate() }
+
+		stage('Docker Clean') { utils.removeImages(artifactName) }
+
+		stage('Docker Build') {
+			utils.uiDockerBuild(applicationDir, artifactName, releasedVersion)
+		}
+
+		if (GIT_IMAGE_PUSH.toBoolean()) {
+			stage('Save Image to Tar Archive') {
+				utils.pushImageToRepo(applicationDir, distroDirPath, artifactName, releasedVersion )
+			}
+		}
+
+		if (GIT_TAG.toBoolean()) {
+			stage('Tag Branch') {
+				utils.tagBranch(applicationDir, uiRepoUrl, releasedVersion)
+			}
+			sh "docker images"
+		}
+
+		//TODO: has to define PROP_ENV
+		stage('deploy to DEV'){
+			utils.deployUIToDev(artifactName, releasedVersion, PROP_ENV)
+		}
+
+		stage('load Image'){
+			if (GIT_IMAGE_PUSH.toBoolean()) {
+				utils.loadImage(distroDirPath, artifactName, releasedVersion, destinationIP)
+			}
+		}
+
+	}catch (error) {
+		println error
+		// If there was an exception thrown, the build failed
+		currentBuild.result = 'FAILURE'
+		throw error
+	} finally {
+		// Success or failure, always send notifications
+		utils.sendNotification(currentBuild.result)
+	}
+}

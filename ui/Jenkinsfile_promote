@@ -1,0 +1,53 @@
+#!/usr/bin/env groovy
+@Library('JenkinsSharedLibrary') _
+
+//node("jenkins-slave")
+node {
+	def projectProperties = [
+		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '3']],
+		disableConcurrentBuilds(),
+		parameters([
+			string(name: 'DESTINATION_IP', description: 'IP of promotion env', defaultValue: "10.0.31.242"),
+			string(name: 'IMAGE_NAME', description: '', defaultValue: "demandplannerui"),
+			string(name: 'IMAGE_TAG', description: 'TAG of latest image', defaultValue: "0.0"),
+			choice(choices: ["dev", "qa"].join("\n"), description: 'Properties Environment', name: 'PROP_ENV')
+		])
+	]
+
+	properties(projectProperties)
+
+	Utils utils = new Utils()
+
+	try {
+		// =========== USER DEFINED VARS ===========
+		def workspacePath = pwd()
+		echo "workspacePath: ${workspacePath}"
+		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_ui.git'
+		def distroDirPath = "/tmp/jenkins/distro_ui"
+		def artifactName = "${IMAGE_NAME}"
+		def destinationIP = "${DESTINATION_IP}"
+		def releasedVersion = "${IMAGE_TAG}"
+		// =========== USER DEFINED VARS ===========
+
+		stage('Git Checkout') {
+			utils.distroCheckout(distroDirPath, distroRepoUrl)
+		}
+		
+		// TODO: has to log on to destination box and execute there
+		stage('Docker Clean'){ utils.removeImages(artifactName) }
+
+		stage('deploy'){
+			utils.promoteUIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP)
+		}
+	}catch (error) {
+		println error
+		// If there was an exception thrown, the build failed
+		currentBuild.result = 'FAILURE'
+		throw error
+	} finally {
+		// Success or failure, always send notifications
+		utils.sendNotification(currentBuild.result)
+	}
+}
+
+
