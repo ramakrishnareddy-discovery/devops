@@ -161,7 +161,7 @@ node {
 		throw error
 	} finally {
 		// Success or failure, always send notifications
-		utils.sendNotification(currentBuild.result, 'false')
+		utils.sendNotification(currentBuild.result)
 	}
 }
 
