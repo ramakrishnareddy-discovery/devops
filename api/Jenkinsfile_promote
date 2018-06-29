@@ -8,6 +8,7 @@ node {
 		disableConcurrentBuilds(),
 		parameters([
 			string(name: 'DESTINATION_IP', description: 'IP of promotion env', defaultValue: "10.0.31.242"),
+			string(name: 'IMAGE_NAME', description: '', defaultValue: "qualcomm-ms-demandplanner"),
 			string(name: 'IMAGE_TAG', description: 'TAG of latest image', defaultValue: "1.0.0-SNAPSHOT"),
 			choice(choices: ["dev", "qa"].join("\n"), description: 'Properties Environment', name: 'PROP_ENV')
 		])
@@ -23,7 +24,7 @@ node {
 		echo "workspacePath: ${workspacePath}"
 		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_api.git'
 		def distroDirPath = "/tmp/jenkins/distro_api"
-		def artifactName = "demandplannerapi"
+		def artifactName = "${IMAGE_NAME}"
 		def destinationIP = "${DESTINATION_IP}"
 		def releasedVersion = "${IMAGE_TAG}"
 		// =========== USER DEFINED VARS ===========
