@@ -74,7 +74,7 @@ node {
 
 		if (GIT_TAG.toBoolean()) {
 			stage('Tag Branch') {
-				utils.tagBranch(applicationDir, uiRepoUrl, releasedVersion)
+				utils.tagBranch(applicationDir, apiRepoUrl, releasedVersion)
 			}
 			sh "docker images"
 		}
