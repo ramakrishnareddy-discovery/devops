@@ -15,7 +15,7 @@ node {
 		]),
 	]
 	projectProperties.add(pipelineTriggers([upstream(threshold: hudson.model.Result.SUCCESS,upstreamProjects: "common")]))
-	projectProperties.add(pipelineTriggers([cron('H 21 * * *')]))
+	//projectProperties.add(pipelineTriggers([cron('H 21 * * *')]))
 
 	properties(projectProperties)
 

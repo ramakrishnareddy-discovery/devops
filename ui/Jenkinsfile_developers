@@ -15,7 +15,7 @@ node {
 			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not')
 		]),
 	]
-	projectProperties.add(pipelineTriggers([cron('H 21 * * *')]))
+	//projectProperties.add(pipelineTriggers([cron('H 21 * * *')]))
 
 	properties(projectProperties)
 
