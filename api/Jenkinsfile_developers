@@ -37,16 +37,16 @@ node {
 		def destinationIP = "${DESTINATION_IP}"
 		// =========== USER DEFINED VARS ===========
 
-		checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl)
+		checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl,utils)
         build()
         sonarScanner()
-        allCodeQualityTests()
-		dockerClean(artifactName)
+        allCodeQualityTests(utils)
+		dockerClean(artifactName,utils)
 		dockerBuild()
-        saveImage(applicationDir, distroDirPath, artifactName, releasedVersion,GIT_IMAGE_PUSH)
-		tagBranch(applicationDir, apiRepoUrl, releasedVersion,GIT_TAG)
-        dev(artifactName, releasedVersion, PROP_ENV)
-		loadImage(distroDirPath, artifactName, releasedVersion, destinationIP,GIT_IMAGE_PUSH)	
+        saveImage(applicationDir, distroDirPath, artifactName, releasedVersion,GIT_IMAGE_PUSH, utils)
+		tagBranch(applicationDir, apiRepoUrl, releasedVersion,GIT_TAG, utils)
+        dev(artifactName, releasedVersion, PROP_ENV, utils)
+		loadImage(distroDirPath, artifactName, releasedVersion, destinationIP,GIT_IMAGE_PUSH, utils)	
 		
 	}catch (error) {
 		println error
@@ -60,7 +60,7 @@ node {
 }
 
 
-def checkout() {
+def checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl,utils) {
 	stage('Git Checkout') {
 			utils.sourceCodeCheckout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl)
 			artifactName = utils.getArtifact("demandplannerapi")
@@ -88,11 +88,11 @@ def sonarScanner() {
 		}
 }
 
-def allCodeQualityTests() {
+def allCodeQualityTests(utils) {
 	stage("SonarQube Quality Gate") { utils.processQualityGate() }
 }
 
-def dockerClean(artifactName) {
+def dockerClean(artifactName,utils) {
 	stage('Docker Clean'){ utils.removeImages(artifactName) }
 }
 
@@ -106,7 +106,7 @@ def dockerBuild() {
 		}
 }
 
-def saveImage(applicationDir, distroDirPath, artifactName, releasedVersion,GIT_IMAGE_PUSH) {
+def saveImage(applicationDir, distroDirPath, artifactName, releasedVersion,GIT_IMAGE_PUSH, utils) {
 	if (GIT_IMAGE_PUSH.toBoolean()) {
 			stage('Save Image to Tar Archive') {
 				utils.pushImageToRepo(applicationDir, distroDirPath, artifactName, releasedVersion)
@@ -114,7 +114,7 @@ def saveImage(applicationDir, distroDirPath, artifactName, releasedVersion,GIT_I
 		}
 }
 
-def tagBranch(applicationDir, apiRepoUrl, releasedVersion,GIT_TAG) {
+def tagBranch(applicationDir, apiRepoUrl, releasedVersion,GIT_TAG, utils) {
 	if (GIT_TAG.toBoolean()) {
 			stage('Tag Branch') {
 				utils.tagBranch(applicationDir, apiRepoUrl, releasedVersion)
@@ -123,13 +123,13 @@ def tagBranch(applicationDir, apiRepoUrl, releasedVersion,GIT_TAG) {
 		}
 }
 
-dev dev(artifactName, releasedVersion, PROP_ENV) {
+dev dev(artifactName, releasedVersion, PROP_ENV, utils) {
 		stage('deploy to DEV'){
 			utils.deployAPIToDev(artifactName, releasedVersion, PROP_ENV)
 		}
 }
 
-def loadImage(distroDirPath, artifactName, releasedVersion, destinationIP,GIT_IMAGE_PUSH) {
+def loadImage(distroDirPath, artifactName, releasedVersion, destinationIP,GIT_IMAGE_PUSH, utils) {
 		stage('load Image'){
 			if (GIT_IMAGE_PUSH.toBoolean()) {
 				utils.loadImage(distroDirPath, artifactName, releasedVersion, destinationIP)
