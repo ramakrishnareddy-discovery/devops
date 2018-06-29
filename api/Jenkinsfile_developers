@@ -65,8 +65,6 @@ node {
 def checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl,utils) {
 	stage('Git Checkout') {
 			utils.sourceCodeCheckout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl)
-			
-			echo "releasedVersion:${releasedVersion}"
 		}
 }
 
