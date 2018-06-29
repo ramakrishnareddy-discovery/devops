@@ -9,7 +9,7 @@ node {
 		parameters([
 			string(name: 'DESTINATION_IP', description: 'IP of promotion env', defaultValue: "10.0.31.242"),
 			string(name: 'IMAGE_NAME', description: '', defaultValue: "demandplannerui"),
-			string(name: 'IMAGE_TAG', description: 'TAG of latest image', defaultValue: "1.0.0-SNAPSHOT"),
+			string(name: 'IMAGE_TAG', description: 'TAG of latest image', defaultValue: "0.0"),
 			choice(choices: ["dev", "qa"].join("\n"), description: 'Properties Environment', name: 'PROP_ENV')
 		])
 	]

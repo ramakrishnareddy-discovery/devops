@@ -10,6 +10,7 @@ node {
 			string(name: 'MINOR_VERSION', description: '', defaultValue: "0"),
 			string(name: 'GIT_BRANCH', description: 'UI Branch Name', defaultValue: "develop"),
 			choice(choices: ["dev", "qa"].join("\n"), description: 'Properties Environment', name: 'PROP_ENV'),
+			string(name: 'DESTINATION_IP', description: 'IP of promotion env', defaultValue: "10.0.31.242"),
 			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Save image to a tar archive'),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not')
 		]),
@@ -32,6 +33,7 @@ node {
 		def applicationDir = 'demandplannerui'
 		def releasedVersion = "${MAJOR_VERSION}.${MINOR_VERSION}"
 		def branchName = "${GIT_BRANCH}"
+		def destinationIP = "${DESTINATION_IP}"
 		// =========== USER DEFINED VARS ===========
 
 		echo "workspacePath: ${workspacePath}"
