@@ -23,7 +23,7 @@ node {
 		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_api.git'
 		def distroDirPath = "/tmp/jenkins/distro_api"
 		def artifactName = "demandplannerapi"
-		def destinationIP = "${GIT_BRANCH}"
+		def destinationIP = "${DESTINATION_IP}"
 		// =========== USER DEFINED VARS ===========
 
 		stage('Git Checkout') {
