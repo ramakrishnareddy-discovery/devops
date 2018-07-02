@@ -134,12 +134,7 @@ def saveImage(applicationDir, distroDirPath, artifactName, releasedVersion,GIT_I
 		if (GIT_IMAGE_PUSH.toBoolean()) {
 					echo "Save Image to Tar Archive and Copy image to ${distroDirPath}"
 					utils.pushImageToRepo(applicationDir, distroDirPath, artifactName, releasedVersion)
-		} else {
-			dir (applicationDir) {
-				echo "Copy image to ${distroDirPath}"
-				sh "cp -rf target/${artifactName}-${releasedVersion}.tar ${distroDirPath}"
-			}
-		}
+		} 
 	}	
 }
 
