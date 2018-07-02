@@ -40,6 +40,8 @@ node {
 			def artifactName = utils.getArtifact("demandplannerapi")
 			def releasedVersion = utils.getReleasedVersion("demandplannerapi")
 			echo "releasedVersion: ${releasedVersion}"
+			echo "mvn help:evaluate -Dv=${BUILD_NUMBER}-Dexpression=project.version -q -DforceStdout"
+			
 		build()
 		allTests()
         sonarScanner()
@@ -82,14 +84,14 @@ def build() {
 }
 
 def allTests() {
-	stage ('Junit Test') { dir('demandplannerapi') {sh "mvn test" }}
+	stage ('Junit Test') { dir('demandplannerapi') {sh "mvn test -Dv=${BUILD_NUMBER}" }}
 }
 
 def sonarScanner() {
 		stage('SonarQube Analysis') {
 			dir('demandplannerapi') {
 				withSonarQubeEnv('SonarQube_V7') { // SonarQube taskId is automatically attached to the pipeline context
-					sh "mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.3.0.603:sonar" }
+					sh "mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.3.0.603:sonar -Dv=${BUILD_NUMBER}" }
 			}
 		}
 }
