@@ -43,7 +43,7 @@ node {
 			//echo "mvn help:evaluate -Dv=${BUILD_NUMBER} -Dexpression=project.version -q -DforceStdout"
 			sh "mvn help:evaluate -Dv=${BUILD_NUMBER} -Dexpression=project.version -q -DforceStdout"
 			def  mvnVersion = sh (
-			script: "mvn help:evaluate -Dv=${BUILD_NUMBER} -Dexpression=project.version -DforceStdout",
+			script: "mvn help:evaluate -Dv=${BUILD_NUMBER} -Dexpression=project.version -q -DforceStdout",
 			returnStdout: true
 			).trim()
 			echo "mvnVersion: ${mvnVersion}"
