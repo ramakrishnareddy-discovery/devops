@@ -41,7 +41,7 @@ node {
 			//def releasedVersion = utils.getReleasedVersion("demandplannerapi")
 			printf 'VERSION=${project.version}' | mvn help:evaluate -Dv=${BUILD_NUMBER} | grep '^VERSION=' | sed 's/^VERSION=//g'
 			def  releasedVersion = sh (
-			script: "VERSION=${project.version}' | mvn help:evaluate -Dv=${BUILD_NUMBER} | grep '^VERSION=' | sed 's/^VERSION=//g'",
+			script: " 'VERSION=${project.version}' | mvn help:evaluate -Dv=${BUILD_NUMBER} | grep \'^VERSION=\' | sed \'s/^VERSION=//g\'",
 			returnStdout: true
 			).trim()
 			echo "releasedVersion: ${releasedVersion}"
