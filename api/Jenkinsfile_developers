@@ -43,6 +43,7 @@ node {
 			
 			 def releasedVersion = sh (
 			script: """
+					pwd
 					mvn help:evaluate -Dexpression=project.version -Dv=${BUILD_NUMBER}
 			""",
 			returnStdout: true
