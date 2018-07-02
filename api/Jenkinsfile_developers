@@ -130,11 +130,17 @@ def dockerBuild() {
 }
 
 def saveImage(applicationDir, distroDirPath, artifactName, releasedVersion,GIT_IMAGE_PUSH, utils) {
-	if (GIT_IMAGE_PUSH.toBoolean()) {
-			stage('Save Image to Tar Archive') {
-				utils.pushImageToRepo(applicationDir, distroDirPath, artifactName, releasedVersion)
+	stage('Save Image to Tar Archive') {
+		if (GIT_IMAGE_PUSH.toBoolean()) {
+					echo "Save Image to Tar Archive and Copy image to ${distroDirPath}"
+					utils.pushImageToRepo(applicationDir, distroDirPath, artifactName, releasedVersion)
+		} else {
+			dir (applicationDir) {
+				echo "Copy image to ${distroDirPath}"
+				sh "cp -rf target/${artifactName}-${releasedVersion}.tar ${distroDirPath}"
 			}
 		}
+	}	
 }
 
 def tagBranch(applicationDir, apiRepoUrl, releasedVersion,GIT_TAG, utils) {
