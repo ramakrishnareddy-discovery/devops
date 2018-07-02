@@ -50,6 +50,13 @@ node {
 		tagBranch(applicationDir, apiRepoUrl, releasedVersion,GIT_TAG, utils)
         dev(artifactName, releasedVersion, PROP_ENV, utils)
 		loadImage(distroDirPath, artifactName, releasedVersion, destinationIP,GIT_IMAGE_PUSH, utils)	
+		stage('deploy to QA'){
+			timeout(activity: true, time: 20, unit: 'SECONDS') {
+	 			input message: 'Deploy to QA Env?', ok: 'Deploy'
+	 		}
+			utils.removeDanglingImages(artifactName, destinationIP)
+			utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP)
+		}
 		
 	}catch (error) {
 		println error
