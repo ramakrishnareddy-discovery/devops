@@ -41,6 +41,7 @@ node {
 			def releasedVersion = utils.getReleasedVersion("demandplannerapi")
         
 		build()
+		allTests()
         sonarScanner()
         allCodeQualityTests(utils)
 		dockerClean(artifactName,utils)
@@ -63,8 +64,38 @@ node {
 
 
 def checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl,utils) {
+	/*
 	stage('Git Checkout') {
 			utils.sourceCodeCheckout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl)
+	}*/
+		stage('Git Checkout') {
+			parallel (
+				phase1: { 
+					dir(applicationDir) {
+						git branch: "${branchName}",
+						credentialsId: 'git-repo-ssh-access',
+						url: "${repoUrl}"
+					}
+				},
+				phase2: { 
+					if(!fileExists(distroDirPath))
+					{
+						echo "${distroDirPath} doesn't exist.Continue cloning ..."
+
+						dir(distroDirPath){
+							git branch: 'master',
+							credentialsId: 'git-repo-ssh-access',
+							url: "${distroRepoUrl}"
+						}
+					}
+					else {
+						echo "${distroDirPath} is already exist.Continue updating ..."
+						sshagent (credentials: ['git-repo-ssh-access']) {
+							dir(distroDirPath) { sh "git pull origin HEAD:master" }
+						}
+					}
+				}
+			)
 		}
 }
 
