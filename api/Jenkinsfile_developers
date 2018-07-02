@@ -41,13 +41,20 @@ node {
 			//def releasedVersion = utils.getReleasedVersion("demandplannerapi")
 			//def VERSION=${project.version} | mvn help:evaluate -Dv=${BUILD_NUMBER} | grep \'^VERSION=\' | sed \'s/^VERSION=//g\'
 			//mvn help:evaluate -Dexpression=project.version -Dv=${BUILD_NUMBER}
-			 def releasedVersion = sh (
-			script: """
-					pwd
-					
-			""",
-			returnStdout: true
-			).trim()
+			
+			def releasedVersion
+			dir(applicationDir) {
+				releasedVersion = sh (
+						script: """ mvn help:evaluate -Dexpression=project.version -Dv=${BUILD_NUMBER} """,
+						returnStdout: true
+						).trim()	
+
+
+			} 
+			 
+			//mvn help:evaluate -Dexpression=project.version | grep -e '^[^\[]'
+
+
 
 			echo "releasedVersion: ${releasedVersion}"
 		build()
