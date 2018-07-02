@@ -129,7 +129,7 @@ def dockerBuild() {
 		}
 }
 
-def saveImage(applicationDir, distroDirPath, artifactName, releasedVersion,GIT_IMAGE_PUSH, utils, ) {
+def saveImage(applicationDir, distroDirPath, artifactName, releasedVersion,GIT_IMAGE_PUSH, utils) {
 	stage('Save Image to Tar Archive') {
 		if (GIT_IMAGE_PUSH.toBoolean()) {
 			echo "Save Image to Tar Archive and Copy image to ${distroDirPath}"
