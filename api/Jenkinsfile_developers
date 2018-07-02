@@ -138,8 +138,8 @@ def dev(artifactName, releasedVersion, PROP_ENV, utils) {
 
 def loadImage(distroDirPath, artifactName, releasedVersion, destinationIP,GIT_IMAGE_PUSH, utils) {
 		stage('load Image'){
-			if (GIT_IMAGE_PUSH.toBoolean()) {
+			//if (GIT_IMAGE_PUSH.toBoolean()) {
 				utils.loadImage(distroDirPath, artifactName, releasedVersion, destinationIP)
-			}
+			//}
 		}
 }
