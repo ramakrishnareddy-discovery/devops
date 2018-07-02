@@ -7,6 +7,8 @@ node {
 		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '3']],
 		disableConcurrentBuilds(),
 		parameters([
+			string(name: 'MAJOR_VERSION', description: '', defaultValue: "0"),
+			string(name: 'MINOR_VERSION', description: '', defaultValue: "0"),
 			string(name: 'GIT_BRANCH', description: 'API Branch Name', defaultValue: "master"),
 			choice(choices: ["dev", "qa"].join("\n"), description: 'Properties Environment', name: 'PROP_ENV'),
 			string(name: 'DESTINATION_IP', description: 'IP of promotion env', defaultValue: "10.0.31.242"),
@@ -38,8 +40,8 @@ node {
 		checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl,utils)
 			// Since artifactName and releasedVersion fetching from POM.xml, should execute after cloning the repo.
 			def artifactName = utils.getArtifact("demandplannerapi")
-			def releasedVersion = utils.getReleasedVersion("demandplannerapi")
-        
+			//def releasedVersion = utils.getReleasedVersion("demandplannerapi")
+			def releasedVersion = "${MAJOR_VERSION}.${MINOR_VERSION}.${env.BUILD_NUMBER}"
 		build()
 		allTests()
         sonarScanner()
