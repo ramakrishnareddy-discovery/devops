@@ -40,8 +40,14 @@ node {
 			def artifactName = utils.getArtifact("demandplannerapi")
 			def releasedVersion = utils.getReleasedVersion("demandplannerapi")
 			echo "releasedVersion: ${releasedVersion}"
-			echo "mvn help:evaluate -Dv=${BUILD_NUMBER}-Dexpression=project.version -q -DforceStdout"
-			
+			//echo "mvn help:evaluate -Dv=${BUILD_NUMBER} -Dexpression=project.version -q -DforceStdout"
+			sh "mvn help:evaluate -Dv=${BUILD_NUMBER} -Dexpression=project.version -q -DforceStdout"
+			def  mvnVersion = sh (
+			script: "mvn help:evaluate -Dv=${BUILD_NUMBER} -Dexpression=project.version -DforceStdout",
+			returnStdout: true
+			).trim()
+			echo "mvnVersion: ${mvnVersion}"
+
 		build()
 		allTests()
         sonarScanner()
