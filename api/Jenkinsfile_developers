@@ -44,8 +44,8 @@ node {
 			returnStdout: true
 			).trim()
 			echo "releasedVersion: ${releasedVersion}"
-		def version=mvn help:evaluate -Dexpression=project.version -Dv=${BUILD_NUMBER} -q -DforceStdout
-		echo "version: ${version}"
+		//def version="mvn help:evaluate -Dexpression=project.version -Dv=${BUILD_NUMBER} -q -DforceStdout"
+		//echo "version: ${version}"
 		build()
 		allTests()
         sonarScanner()
