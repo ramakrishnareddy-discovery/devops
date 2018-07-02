@@ -43,7 +43,7 @@ node {
 			
 			 def releasedVersion = sh (
 			script: """
-					mvn help:evaluate -Dexpression=project.version -Dv=${BUILD_NUMBER}| grep -e '^[^\\[]' 
+					mvn help:evaluate -Dexpression=project.version -Dv=${BUILD_NUMBER}
 			""",
 			returnStdout: true
 			).trim()
