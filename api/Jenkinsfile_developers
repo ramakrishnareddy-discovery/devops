@@ -40,10 +40,7 @@ node {
 			def artifactName = utils.getArtifact("demandplannerapi")
 			//def releasedVersion = utils.getReleasedVersion("demandplannerapi")
 			//def VERSION=${project.version} | mvn help:evaluate -Dv=${BUILD_NUMBER} | grep \'^VERSION=\' | sed \'s/^VERSION=//g\'
-			sh """
-			 mvn mvn help:evaluate -Dexpression=project.version -Dv=${BUILD_NUMBER}|grep -Ev '(^\\[|Download\\w+:)' 
-			 """
-
+			
 			 def releasedVersion = sh (
 			script: """
 					mvn mvn help:evaluate -Dexpression=project.version -Dv=${BUILD_NUMBER}| grep -e '^[^\\[]' 
