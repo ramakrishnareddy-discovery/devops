@@ -38,14 +38,12 @@ node {
 		checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl,utils)
 			// Since artifactName and releasedVersion fetching from POM.xml, should execute after cloning the repo.
 			def artifactName = utils.getArtifact("demandplannerapi")
-			def releasedVersion = utils.getReleasedVersion("demandplannerapi")
-			echo "releasedVersion: ${releasedVersion}"
-			//echo "mvn help:evaluate -Dv=${BUILD_NUMBER} -Dexpression=project.version -q -DforceStdout"
-			def  mvnVersion = sh (
-			script: "mvn help:evaluate -Dexpression=project.version -q -DforceStdout",
+			//def releasedVersion = utils.getReleasedVersion("demandplannerapi")
+			def  releasedVersion = sh (
+			script: "mvn help:evaluate -Dexpression=project.version -Dv=${BUILD_NUMBER}| grep -e '^[^\[]'",
 			returnStdout: true
 			).trim()
-			echo "mvnVersion: ${mvnVersion}"
+			echo "releasedVersion: ${releasedVersion}"
 
 		build()
 		allTests()
