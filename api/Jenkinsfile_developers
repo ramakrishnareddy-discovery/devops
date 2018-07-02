@@ -40,8 +40,8 @@ node {
 		checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl,utils)
 			// Since artifactName and releasedVersion fetching from POM.xml, should execute after cloning the repo.
 			def artifactName = utils.getArtifact("demandplannerapi")
-			//def releasedVersion = utils.getReleasedVersion("demandplannerapi")
-			def releasedVersion = "${MAJOR_VERSION}.${MINOR_VERSION}.${env.BUILD_NUMBER}"
+			def releasedVersion = utils.getReleasedVersion("demandplannerapi")
+			//def releasedVersion = "${MAJOR_VERSION}.${MINOR_VERSION}.${env.BUILD_NUMBER}"
 		build()
 		allTests()
         sonarScanner()
