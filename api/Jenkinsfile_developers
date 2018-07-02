@@ -79,7 +79,7 @@ def checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUr
 
 def build() {
 	stage ('Maven Build') {
-			dir('demandplannerapi') { sh "mvn clean install -Dmaven.test.skip=true" }
+			dir('demandplannerapi') { sh "mvn clean install -Dmaven.test.skip=true -Dv=${BUILD_NUMBER}" }
 		}
 }
 
@@ -108,7 +108,7 @@ def dockerBuild() {
 	stage('Docker Build'){
 			dir('demandplannerapi') {
 				echo "Starting Docker Image Creation..."
-				sh "mvn docker:build"
+				sh "mvn docker:build -Dv=${BUILD_NUMBER}"
 				echo "Docker Image Creation Complted..."
 			}
 		}
