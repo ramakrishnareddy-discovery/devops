@@ -133,6 +133,7 @@ def saveImage(applicationDir, distroDirPath, artifactName, releasedVersion,GIT_I
 	stage('Save Image to Tar Archive') {
 		if (GIT_IMAGE_PUSH.toBoolean()) {
 			echo "Save Image to Tar Archive and Copy image to ${distroDirPath}"
+			utils.saveImageToFS(applicationDir, distroDirPath, artifactName, releasedVersion)
 			utils.saveImageToRepo(applicationDir, distroDirPath, artifactName, releasedVersion)		
 		} else {
 			echo "Save Image to Tar Archive and Copy image to ${distroDirPath}"
@@ -158,8 +159,6 @@ def dev(artifactName, releasedVersion, PROP_ENV, utils) {
 
 def loadImage(distroDirPath, artifactName, releasedVersion, destinationIP,GIT_IMAGE_PUSH, utils) {
 		stage('load Image'){
-			//if (GIT_IMAGE_PUSH.toBoolean()) {
 				utils.loadImage(distroDirPath, artifactName, releasedVersion, destinationIP)
-			//}
 		}
 }
