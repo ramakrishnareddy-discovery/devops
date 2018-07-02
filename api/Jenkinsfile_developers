@@ -40,7 +40,7 @@ node {
 			def artifactName = utils.getArtifact("demandplannerapi")
 			//def releasedVersion = utils.getReleasedVersion("demandplannerapi")
 			def  releasedVersion = sh (
-			script: "mvn help:evaluate -Dexpression=project.version -Dv=${BUILD_NUMBER} | grep -e '^[^[]'",
+			script: "mvn help:evaluate -Dexpression=project.version -Dv=${BUILD_NUMBER} | grep -e '^[^\\[]'",
 			returnStdout: true
 			).trim()
 			echo "releasedVersion: ${releasedVersion}"
