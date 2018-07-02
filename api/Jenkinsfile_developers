@@ -39,16 +39,10 @@ node {
 			// Since artifactName and releasedVersion fetching from POM.xml, should execute after cloning the repo.
 			def artifactName = utils.getArtifact("demandplannerapi")
 			//def releasedVersion = utils.getReleasedVersion("demandplannerapi")
-			printf 'VERSION=${project.version}' | mvn help:evaluate -Dv=${BUILD_NUMBER} | grep \'^VERSION=\' | sed \'s/^VERSION=//g\'
-			/*
-			def  releasedVersion = sh (
-			script: " 'VERSION=${project.version}' | mvn help:evaluate -Dv=${BUILD_NUMBER} | grep \'^VERSION=\' | sed \'s/^VERSION=//g\'",
-			returnStdout: true
-			).trim()*/
+			//def VERSION=${project.version} | mvn help:evaluate -Dv=${BUILD_NUMBER} | grep \'^VERSION=\' | sed \'s/^VERSION=//g\'
+			sh " mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version -Dv=${BUILD_NUMBER}|grep -Ev '(^\[|Download\w+:)' "
 
-			echo "releasedVersion: ${releasedVersion}"
-		//def version="mvn help:evaluate -Dexpression=project.version -Dv=${BUILD_NUMBER} -q -DforceStdout"
-		//echo "version: ${version}"
+
 		build()
 		allTests()
         sonarScanner()
