@@ -45,7 +45,7 @@ node {
 			def releasedVersion
 			dir(applicationDir) {
 				releasedVersion = sh (
-						script: """ mvn help:evaluate -Dexpression=project.version -Dv=${BUILD_NUMBER} """,
+						script: """ mvn help:evaluate -Dexpression=project.version -Dv=${BUILD_NUMBER} | | grep -e '^[^\[]'  """,
 						returnStdout: true
 						).trim()	
 
