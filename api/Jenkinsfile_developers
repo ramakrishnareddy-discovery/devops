@@ -54,7 +54,6 @@ node {
 			timeout(activity: true, time: 20, unit: 'SECONDS') {
 	 			input message: 'Deploy to QA Env?', ok: 'Deploy'
 	 		}
-			utils.removeDanglingImages(artifactName, destinationIP)
 			utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP)
 		}
 		
