@@ -50,6 +50,12 @@ node {
 
 		}
 		echo "releasedVersion: ${releasedVersion}"
+
+		def devBoxes = '0.0.0.0,1.1.1.2'
+		for (String i : devBoxes.split(",")) {
+	 		println i
+	 	}
+		 
 		build(applicationDir)
 		allTests(applicationDir)
 		sonarScanner(applicationDir)
@@ -61,10 +67,7 @@ node {
 		// PROP_ENV = dev
 		deployToDev(artifactName, releasedVersion, "dev", utils)
 
-		def devBoxes = '0.0.0.0,1.1.1.2'
-		for (String i : devBoxes.split(",")) {
-	 		println i
-	 	}
+		
 
 		loadImage(distroDirPath, artifactName, releasedVersion, destinationIP,GIT_IMAGE_PUSH, utils)
 		// PROP_ENV = qa
