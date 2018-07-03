@@ -7,9 +7,9 @@ node {
 		disableConcurrentBuilds(),
 		parameters([
 			string(name: 'MAJOR_VERSION', description: '', defaultValue: "0"),
-			string(name: 'MINOR_VERSION', description: '', defaultValue: "0"),
+			string(name: 'MINOR_VERSION', description: '', defaultValue: "SNAPSHOT"),
 			string(name: 'GIT_BRANCH', description: 'UI Branch Name', defaultValue: "develop"),
-			choice(choices: ["dev", "qa"].join("\n"), description: 'Properties Environment', name: 'PROP_ENV'),
+			//choice(choices: ["dev", "qa"].join("\n"), description: 'Properties Environment', name: 'PROP_ENV'),
 			string(name: 'DESTINATION_IP', description: 'IP of promotion env', defaultValue: "10.0.31.242"),
 			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Save image to a tar archive'),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not')
@@ -31,7 +31,7 @@ node {
 		def distroDirPath = "/tmp/jenkins/distro_ui"
 		def artifactName = 'demandplannerui'
 		def applicationDir = 'demandplannerui'
-		def releasedVersion = "${MAJOR_VERSION}.${MINOR_VERSION}"
+		def releasedVersion = "${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}"
 		def branchName = "${GIT_BRANCH}"
 		def destinationIP = "${DESTINATION_IP}"
 		// =========== USER DEFINED VARS ===========
@@ -54,9 +54,14 @@ node {
 			utils.uiDockerBuild(applicationDir, artifactName, releasedVersion)
 		}
 
-		if (GIT_IMAGE_PUSH.toBoolean()) {
-			stage('Save Image to Tar Archive') {
-				utils.pushImageToRepo(applicationDir, distroDirPath, artifactName, releasedVersion )
+		stage('Save Image to Tar Archive') {
+			if (GIT_IMAGE_PUSH.toBoolean()) {
+				echo "Save Image to Tar Archive and pushing Tar to Git Repo"
+				utils.saveImageToFS(applicationDir, distroDirPath, artifactName, releasedVersion)
+				utils.saveImageToRepo(applicationDir, distroDirPath, artifactName, releasedVersion)
+			} else {
+				echo "Save Image to Tar Archive and Copy image to ${distroDirPath}"
+				utils.saveImageToFS(applicationDir, distroDirPath, artifactName, releasedVersion)
 			}
 		}
 
@@ -68,6 +73,7 @@ node {
 		}
 
 		//TODO: has to define PROP_ENV
+		def PROP_ENV = null
 		stage('deploy to DEV'){
 			utils.deployUIToDev(artifactName, releasedVersion, PROP_ENV)
 		}
@@ -76,6 +82,14 @@ node {
 			if (GIT_IMAGE_PUSH.toBoolean()) {
 				utils.loadImage(distroDirPath, artifactName, releasedVersion, destinationIP)
 			}
+		}
+
+		//TODO: has to define PROP_ENV
+		stage('deploy to QA'){
+			timeout(activity: true, time: 20, unit: 'SECONDS') {
+				input message: 'Deploy to QA Env?', ok: 'Deploy'
+			}
+			utils.promoteUIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP)
 		}
 
 	}catch (error) {

@@ -32,7 +32,6 @@ node {
 		def distroDirPath = "/tmp/jenkins/distro_api"
 		def applicationDir = "demandplannerapi"
 		def branchName = "${GIT_BRANCH}"
-		// TODO: comma separated IP
 		def destinationIP = "${DESTINATION_IP}"
 		// =========== USER DEFINED VARS ===========
 
@@ -51,11 +50,13 @@ node {
 		}
 		echo "releasedVersion: ${releasedVersion}"
 
+		// TODO: comma separated IP, put this for stmt around loadimage, another two for each environment: NOT NOW
+		//DEV_ENVIRONMENT_IP, QA_ENVIRONMENT_IP 
 		def devBoxes = '0.0.0.0,1.1.1.2'
 		for (String i : devBoxes.split(",")) {
 	 		println i
 	 	}
-		 
+
 		build(applicationDir)
 		allTests(applicationDir)
 		sonarScanner(applicationDir)
@@ -66,9 +67,6 @@ node {
 		tagBranch(applicationDir, apiRepoUrl, releasedVersion,GIT_TAG, utils)
 		// PROP_ENV = dev
 		deployToDev(artifactName, releasedVersion, "dev", utils)
-
-		
-
 		loadImage(distroDirPath, artifactName, releasedVersion, destinationIP,GIT_IMAGE_PUSH, utils)
 		// PROP_ENV = qa
 		deployImageToQA(artifactName, releasedVersion, "qa", destinationIP, utils)
