@@ -33,7 +33,7 @@ node {
 		build(applicationDir)
 		sonarScanner(applicationDir)
 		allCodeQualityTests(utils)
-		def releasedVersion = getReleasedVersion(applicationDir) + "${BUILD_NUMBER}"
+		def releasedVersion = utils.getReleasedVersion(applicationDir) + "${BUILD_NUMBER}"
 		echo "releasedVersion: ${releasedVersion}"
 		tagBranch(applicationDir, commonRepoUrl, releasedVersion,GIT_TAG, utils)
 
