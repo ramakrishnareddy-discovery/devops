@@ -91,7 +91,7 @@ def allTests(applicationDir) {
 	stage ('Junit Test') { dir(applicationDir) {sh "mvn test -Dv=${BUILD_NUMBER}" }}
 }
 
-def sonarScannerapplicationDir() {
+def sonarScanner(applicationDir) {
 	stage('SonarQube Analysis') {
 		dir(applicationDir) {
 			withSonarQubeEnv('SonarQube_V7') { // SonarQube taskId is automatically attached to the pipeline context
