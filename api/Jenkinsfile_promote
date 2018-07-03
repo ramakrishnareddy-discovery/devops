@@ -47,6 +47,7 @@ node {
 		// Success or failure, always send notifications
 		utils.sendNotification(currentBuild.result)
 	}
+	
 }
 
 

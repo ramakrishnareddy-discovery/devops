@@ -1,14 +1,14 @@
 #!/usr/bin/env groovy
 @Library('JenkinsSharedLibrary') _
 
-//node("jenkins-slave") 
+//node("jenkins-slave")
 node {
 	properties([
 		[$class: 'BuildDiscarderProperty', strategy:
 			[$class: 'LogRotator', numToKeepStr: '3']],
 		disableConcurrentBuilds(),
 		parameters([
-			choice(choices: ["master"].join("\n"), description: 'Branch Name', name: 'GIT_BRANCH'),
+			string(name: 'GIT_BRANCH', description: ' Branch Name', defaultValue: "master"),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, 	description: 'Tagging required or not')
 		]),
 		pipelineTriggers([
@@ -25,60 +25,16 @@ node {
 		def mvnHome = tool name: "Maven_V3"
 		env.PATH = "${mvnHome}/bin:${env.PATH}"
 		def commonRepoUrl = "ssh://git@innersource.accenture.com/appq/common.git"
+		def applicationDir = "common"
+		def branchName = "${GIT_BRANCH}"
 		// =========== USER DEFINED VARS ===========
 
-		stage('Git Checkout') {
-			deleteDir()
-			echo "Checkout in progress..."
-			dir('common') {
-				git branch: '${GIT_BRANCH}',
-				credentialsId: 'git-repo-ssh-access',
-				url: "${commonRepoUrl}"
-			}
-		}
+		checkout(applicationDir, commonRepoUrl, branchName)
+		build(applicationDir)
+		sonarScanner(applicationDir)
+		allCodeQualityTests(utils)
+		tagBranch(applicationDir, commonRepoUrl, releasedVersion,GIT_TAG, utils)
 
-		stage ('Maven Build') {
-			dir('common') { sh "mvn clean install -Dmaven.test.skip=true" }
-		}
-
-		stage('SonarQube Analysis') {
-			dir('common') {
-				withSonarQubeEnv('SonarQube_V7') {
-					// SonarQube taskId is automatically attached to the pipeline context
-					sh "mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.3.0.603:sonar"
-				}
-			}
-		}
-
-	 	//Commenting as Common project doesnt' have Unit Tests:
-		//Since common project doesn't have unit tests, qualityGate status is failing eventually Pipeline aborted due to quality gate failure: ERROR
-	
-		// Configure a webhook in your SonarQube server pointing to <your Jenkins instance>/sonarqube-webhook/
-		stage("SonarQube Quality Gate") {
-			// Just in case something goes wrong, pipeline will be killed after a timeout
-			timeout(time: 2, unit: 'MINUTES') {
-				def qualityGate = waitForQualityGate() // Reuse taskId previously collected by withSonarQubeEnv
-				if (qualityGate.status != 'OK') {
-					//error "Pipeline aborted due to quality gate failure: ${qualityGate.status}"
-					println("SonarQube Quality Gate Failed.failure: ${qualityGate.status}")
-				} else
-				{
-					println("SonarQube Quality Gate Passed")
-				}
-			}
-		}
-	
-
-		if (GIT_TAG.toBoolean()) {
-			stage('Tag Branch'){
-				def releasedVersion = utils.getReleasedVersion("common")
-				sshagent (credentials: ['git-repo-ssh-access']) {
-						dir('common') {
-							utils.tagBranch(commonRepoUrl, releasedVersion)
-						}
-				}
-		    }
-		}	
 	}catch (error) {
 		println error
 		// If there was an exception thrown, the build failed
@@ -87,5 +43,46 @@ node {
 	} finally {
 		// Success or failure, always send notifications
 		utils.sendNotification(currentBuild.result)
+	}
+}
+
+
+def checkout(applicationDir, commonRepoUrl, branchName){
+	stage('Git Checkout') {
+		deleteDir()
+		echo "Checkout in progress..."
+		dir(applicationDir) {
+			git branch: '${GIT_BRANCH}',
+			credentialsId: 'git-repo-ssh-access',
+			url: "${commonRepoUrl}"
+		}
+	}
+}
+
+def build(applicationDir){
+	stage ('Maven Build') {
+		dir(applicationDir) { sh "mvn clean install -Dmaven.test.skip=true" }
+	}
+}
+
+def sonarScanner(applicationDir) {
+	//********* Configure a webhook in your SonarQube server pointing to <your Jenkins instance>/sonarqube-webhook/ ********
+	stage('SonarQube Analysis') {
+		dir(applicationDir) {
+			withSonarQubeEnv('SonarQube_V7') { // SonarQube taskId is automatically attached to the pipeline context
+				sh "mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.3.0.603:sonar" }
+		}
+	}
+}
+
+def allCodeQualityTests(utils) {
+	stage("SonarQube Quality Gate") { utils.processQualityGate() }
+}
+
+def tagBranch(applicationDir, commonRepoUrl, releasedVersion,GIT_TAG, utils) {
+	if (GIT_TAG.toBoolean()) {
+		stage('Tag Branch') {
+			utils.tagBranch(applicationDir, commonRepoUrl, releasedVersion)
+		}
 	}
 }
