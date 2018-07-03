@@ -33,7 +33,9 @@ node {
 		build(applicationDir)
 		sonarScanner(applicationDir)
 		allCodeQualityTests(utils)
-		tagBranch(applicationDir, commonRepoUrl, releasedVersion,GIT_TAG, utils)
+		def taggedVersion = utils.getReleasedVersion(applicationDir) + ".${BUILD_NUMBER}"
+		echo "taggedVersion: ${taggedVersion}"
+		tagBranch(applicationDir, commonRepoUrl, taggedVersion,GIT_TAG, utils)
 
 	}catch (error) {
 		println error
@@ -79,10 +81,10 @@ def allCodeQualityTests(utils) {
 	stage("SonarQube Quality Gate") { utils.processQualityGate() }
 }
 
-def tagBranch(applicationDir, commonRepoUrl, releasedVersion,GIT_TAG, utils) {
+def tagBranch(applicationDir, commonRepoUrl, taggedVersion,GIT_TAG, utils) {
 	if (GIT_TAG.toBoolean()) {
 		stage('Tag Branch') {
-			utils.tagBranch(applicationDir, commonRepoUrl, releasedVersion)
+			utils.tagBranch(applicationDir, commonRepoUrl, taggedVersion)
 		}
 	}
 }
