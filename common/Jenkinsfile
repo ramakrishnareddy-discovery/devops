@@ -33,6 +33,7 @@ node {
 		build(applicationDir)
 		sonarScanner(applicationDir)
 		allCodeQualityTests(utils)
+		def releasedVersion = getReleasedVersion(applicationDir) + "${BUILD_NUMBER}"
 		tagBranch(applicationDir, commonRepoUrl, releasedVersion,GIT_TAG, utils)
 
 	}catch (error) {
