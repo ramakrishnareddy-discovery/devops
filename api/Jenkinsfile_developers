@@ -32,39 +32,35 @@ node {
 		def distroDirPath = "/tmp/jenkins/distro_api"
 		def applicationDir = "demandplannerapi"
 		def branchName = "${GIT_BRANCH}"
+		// TODO: comma separated IP
 		def destinationIP = "${DESTINATION_IP}"
 		// =========== USER DEFINED VARS ===========
 
+
 		checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl,utils)
-			// Since artifactName and releasedVersion fetching from POM.xml, should execute after cloning the repo.
-			def artifactName = utils.getArtifact("demandplannerapi")
-			def releasedVersion
-			dir(applicationDir) {
-				releasedVersion = sh (
-						script: """ mvn help:evaluate -Dexpression=project.version -Dv=${BUILD_NUMBER} | grep -e '^[^\\[]'  """,
-						returnStdout: true
-						).trim()	
+		// Since artifactName and releasedVersion fetching from POM.xml, should execute after cloning the repo.
+		def artifactName = utils.getArtifact("demandplannerapi")
+		def releasedVersion
+		dir(applicationDir) {
+			releasedVersion = sh (
+					script: """ mvn help:evaluate -Dexpression=project.version -Dv=${BUILD_NUMBER} | grep -e '^[^\\[]'  """,
+					returnStdout: true
+					).trim()
 
 
-			} 
+		}
 		echo "releasedVersion: ${releasedVersion}"
-		build()
-		allTests()
-        sonarScanner()
-        allCodeQualityTests(utils)
+		build(applicationDir)
+		allTests(applicationDir)
+		sonarScanner(applicationDir)
+		allCodeQualityTests(utils)
 		dockerClean(artifactName,utils)
 		dockerBuild()
-        saveImage(applicationDir, distroDirPath, artifactName, releasedVersion,GIT_IMAGE_PUSH, utils)
+		saveImage(applicationDir, distroDirPath, artifactName, releasedVersion,GIT_IMAGE_PUSH, utils)
 		tagBranch(applicationDir, apiRepoUrl, releasedVersion,GIT_TAG, utils)
-        dev(artifactName, releasedVersion, PROP_ENV, utils)
-		loadImage(distroDirPath, artifactName, releasedVersion, destinationIP,GIT_IMAGE_PUSH, utils)	
-		stage('deploy to QA'){
-			timeout(activity: true, time: 20, unit: 'SECONDS') {
-	 			input message: 'Deploy to QA Env?', ok: 'Deploy'
-	 		}
-			utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP)
-		}
-		
+		deployToDev(artifactName, releasedVersion, PROP_ENV, utils)
+		loadImage(distroDirPath, artifactName, releasedVersion, destinationIP,GIT_IMAGE_PUSH, utils)
+		deployImageToQA(artifactName, releasedVersion, PROP_ENV, destinationIP)
 	}catch (error) {
 		println error
 		// If there was an exception thrown, the build failed
@@ -79,27 +75,27 @@ node {
 
 def checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl,utils) {
 	stage('Git Checkout') {
-			utils.sourceCodeCheckout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl)
-		}
+		utils.sourceCodeCheckout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl)
+	}
 }
 
-def build() {
+def build(applicationDir) {
 	stage ('Maven Build') {
-			dir('demandplannerapi') { sh "mvn clean install -Dmaven.test.skip=true -Dv=${BUILD_NUMBER}" }
-		}
+		dir(applicationDir) { sh "mvn clean install -Dmaven.test.skip=true -Dv=${BUILD_NUMBER}" }
+	}
 }
 
-def allTests() {
-	stage ('Junit Test') { dir('demandplannerapi') {sh "mvn test -Dv=${BUILD_NUMBER}" }}
+def allTests(applicationDir) {
+	stage ('Junit Test') { dir(applicationDir) {sh "mvn test -Dv=${BUILD_NUMBER}" }}
 }
 
-def sonarScanner() {
-		stage('SonarQube Analysis') {
-			dir('demandplannerapi') {
-				withSonarQubeEnv('SonarQube_V7') { // SonarQube taskId is automatically attached to the pipeline context
-					sh "mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.3.0.603:sonar -Dv=${BUILD_NUMBER}" }
-			}
+def sonarScannerapplicationDir() {
+	stage('SonarQube Analysis') {
+		dir(applicationDir) {
+			withSonarQubeEnv('SonarQube_V7') { // SonarQube taskId is automatically attached to the pipeline context
+				sh "mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.3.0.603:sonar -Dv=${BUILD_NUMBER}" }
 		}
+	}
 }
 
 def allCodeQualityTests(utils) {
@@ -112,44 +108,54 @@ def dockerClean(artifactName,utils) {
 
 def dockerBuild() {
 	stage('Docker Build'){
-			dir('demandplannerapi') {
-				echo "Starting Docker Image Creation..."
-				sh "mvn docker:build -Dv=${BUILD_NUMBER}"
-				echo "Docker Image Creation Complted..."
-			}
+		dir('demandplannerapi') {
+			echo "Starting Docker Image Creation..."
+			sh "mvn docker:build -Dv=${BUILD_NUMBER}"
+			echo "Docker Image Creation Complted..."
 		}
+	}
 }
 
 def saveImage(applicationDir, distroDirPath, artifactName, releasedVersion,GIT_IMAGE_PUSH, utils) {
 	stage('Save Image to Tar Archive') {
 		if (GIT_IMAGE_PUSH.toBoolean()) {
-			echo "Save Image to Tar Archive and Copy image to ${distroDirPath}"
+			echo "Save Image to Tar Archive and pushing Tar to Git Repo"
 			utils.saveImageToFS(applicationDir, distroDirPath, artifactName, releasedVersion)
-			utils.saveImageToRepo(applicationDir, distroDirPath, artifactName, releasedVersion)		
+			utils.saveImageToRepo(applicationDir, distroDirPath, artifactName, releasedVersion)
 		} else {
 			echo "Save Image to Tar Archive and Copy image to ${distroDirPath}"
 			utils.saveImageToFS(applicationDir, distroDirPath, artifactName, releasedVersion)
-		} 
-	}	
+		}
+	}
 }
 
 def tagBranch(applicationDir, apiRepoUrl, releasedVersion,GIT_TAG, utils) {
 	if (GIT_TAG.toBoolean()) {
-			stage('Tag Branch') {
-				utils.tagBranch(applicationDir, apiRepoUrl, releasedVersion)
-			}
-			sh "docker images"
+		stage('Tag Branch') {
+			utils.tagBranch(applicationDir, apiRepoUrl, releasedVersion)
 		}
+		sh "docker images"
+	}
 }
 
-def dev(artifactName, releasedVersion, PROP_ENV, utils) {
-		stage('deploy to DEV'){
-			utils.deployAPIToDev(artifactName, releasedVersion, PROP_ENV)
-		}
+// Assuming jenkins box is Dev BOX and deploying application to local box
+def deployToDev(artifactName, releasedVersion, PROP_ENV, utils) {
+	stage('deploy to DEV'){
+		utils.deployAPIToDev(artifactName, releasedVersion, PROP_ENV)
+	}
 }
 
 def loadImage(distroDirPath, artifactName, releasedVersion, destinationIP,GIT_IMAGE_PUSH, utils) {
-		stage('load Image'){
-				utils.loadImage(distroDirPath, artifactName, releasedVersion, destinationIP)
+	stage('load Image'){
+		utils.loadImage(distroDirPath, artifactName, releasedVersion, destinationIP)
+	}
+}
+
+def deployImageToQA(artifactName, releasedVersion, PROP_ENV, destinationIP) {
+	stage('deploy to QA'){
+		timeout(activity: true, time: 20, unit: 'SECONDS') {
+			input message: 'Deploy to QA Env?', ok: 'Deploy'
 		}
+		utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP)
+	}
 }
