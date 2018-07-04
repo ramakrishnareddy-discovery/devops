@@ -11,8 +11,7 @@ node {
 			string(name: 'GIT_BRANCH', description: ' Branch Name', defaultValue: "feature/dev"),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, 	description: 'Tagging required or not')
 		]),
-		// UTC TIME ZONE - IST (7:30 and 9:30 PM)
-		pipelineTriggers([ cron('H 14,16 * * *') ])
+		pipelineTriggers([ cron('H 11,16 * * *') ])
 	])
 
 //properties([pipelineTriggers([cron('H 23 * * *')])])
