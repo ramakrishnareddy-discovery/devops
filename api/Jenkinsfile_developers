@@ -2,6 +2,8 @@
 @Library('JenkinsSharedLibrary') _
 
 //node("jenkins-slave")
+def artifactName, releasedVersion, PROP_ENV, destinationIP
+Utils utils = new Utils()
 node {
 	def projectProperties = [
 		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '3']],
@@ -21,7 +23,7 @@ node {
 
 	properties(projectProperties)
 
-	Utils utils = new Utils()
+	
 
 	try {
 		// =========== USER DEFINED VARS ===========
@@ -34,14 +36,14 @@ node {
 		def distroDirPath = "/tmp/jenkins/distro_api"
 		def applicationDir = "demandplannerapi"
 		def branchName = "${GIT_BRANCH}"
-		def destinationIP = "${DESTINATION_IP}"
+		destinationIP = "${DESTINATION_IP}"
 		// =========== USER DEFINED VARS ===========
 
 
 		checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl,utils)
 		// Since artifactName and releasedVersion fetching from POM.xml, should execute after cloning the repo.
-		def artifactName = utils.getArtifact("demandplannerapi")
-		def releasedVersion
+		artifactName = utils.getArtifact("demandplannerapi")
+		releasedVersion
 		dir(applicationDir) {
 			releasedVersion = sh (
 					script: """ mvn help:evaluate -Dexpression=project.version -Dv=${BUILD_NUMBER} | grep -e '^[^\\[]'  """,
@@ -100,6 +102,9 @@ stage('Deploy Approval') {
 node {
 	def workspacePath = pwd()
 	echo "workspacePath in SECOND NODE: ${workspacePath}"
+	echo "artifactName: ${artifactName}"
+	echo "releasedVersion: ${releasedVersion}"
+	echo "destinationIP: ${destinationIP}"
     stage('deploy to QA'){
         deployImageToQA(artifactName, releasedVersion, "qa", destinationIP, utils)
     }
