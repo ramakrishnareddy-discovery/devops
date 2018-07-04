@@ -11,14 +11,16 @@ node {
 			string(name: 'GIT_BRANCH', description: ' Branch Name', defaultValue: "feature/dev"),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, 	description: 'Tagging required or not')
 		]),
-		pipelineTriggers([
-			//pollSCM('H/15 * * * *'),
+		pipelineTriggers([ cron('H 23 * * *') ])
+	])
+
+//properties([pipelineTriggers([cron('H 23 * * *')])])
+
+//pollSCM('H/15 * * * *'),
 			//pollSCM('* * * * *'),
 			//cron('@daily')
 			// Trigger build @12 and 4 PM on Week Days
 			//cron('0 12, 16 * * 1-5')
-		])
-	])
 
 	Utils utils = new Utils()
 	try {
