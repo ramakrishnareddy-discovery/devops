@@ -16,6 +16,8 @@ node {
 	]
 	projectProperties.add(pipelineTriggers([upstream(threshold: hudson.model.Result.SUCCESS,upstreamProjects: "common")]))
 	//projectProperties.add(pipelineTriggers([cron('H 21 * * *')]))
+	// Trigger build @12 and 4 PM on Week Days -- DISABLING AS THE UPSTREAM JOB WILL TRIGGER THIS BUILD
+	//projectProperties.add(pipelineTriggers([cron('0 12, 16 * * 1-5')]))
 
 	properties(projectProperties)
 

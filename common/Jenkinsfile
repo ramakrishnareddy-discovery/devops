@@ -15,6 +15,8 @@ node {
 			//pollSCM('H/15 * * * *'),
 			//pollSCM('* * * * *'),
 			//cron('@daily')
+			// Trigger build @12 and 4 PM on Week Days
+			cron('0 12, 16 * * 1-5')
 		])
 	])
 
