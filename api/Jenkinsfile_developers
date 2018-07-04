@@ -77,7 +77,13 @@ node {
 		throw error
 	} finally {
 		// Success or failure, always send notifications
-		utils.sendNotification(currentBuild.result)
+		//utils.sendNotification(currentBuild.result)
+		mail (
+				subject: “Something is wrong with “ +
+				“${env.JOB_NAME} ${env.BUILD_ID}”,
+				to: ‘r.satti@accenture.com’,
+				body: ‘You should fix it’
+			 )
 	}
 }
 
@@ -175,7 +181,7 @@ def deployImageToQA(artifactName, releasedVersion, PROP_ENV, destinationIP, util
 		userAborted = false
 		startMillis = System.currentTimeMillis()
 		timeoutMillis = 10000
-		
+
 		try { 
 			timeout(time: timeoutMillis, unit: 'MILLISECONDS') {
 				input 'Do you approve?' 
@@ -200,7 +206,6 @@ def deployImageToQA(artifactName, releasedVersion, PROP_ENV, destinationIP, util
 			currentBuild.result = 'ABORTED'
 		} else {
 			currentBuild.result = 'SUCCESS'
-			echo "Firing the missiles!"
 			utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP)
 		}
 	}
