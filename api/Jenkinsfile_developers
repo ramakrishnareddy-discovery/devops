@@ -68,8 +68,9 @@ node {
 		// PROP_ENV = dev
 		deployToDev(artifactName, releasedVersion, "dev", utils)
 		loadImage(distroDirPath, artifactName, releasedVersion, destinationIP,GIT_IMAGE_PUSH, utils)
+		
 		// PROP_ENV = qa
-		deployImageToQA(artifactName, releasedVersion, "qa", destinationIP, utils)
+		//deployImageToQA(artifactName, releasedVersion, "qa", destinationIP, utils)
 	}catch (error) {
 		println error
 		// If there was an exception thrown, the build failed
@@ -86,6 +87,21 @@ node {
 			 )
 	}
 }
+
+
+stage('Deploy Approval') {
+   		def userInput = input(
+        		id: 'deployToQA', message: 'input your option:', ok: 'ok', parameters: [string(defaultValue: '', description: '.....', name: 'TEST')]
+   		)
+   	echo ("Deploy Approval: " + userInput)
+}
+
+node {
+    stage('deploy to prod'){
+        deployImageToQA(artifactName, releasedVersion, "qa", destinationIP, utils)
+    }
+}
+
 
 
 def checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl,utils) {
