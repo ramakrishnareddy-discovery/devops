@@ -11,7 +11,7 @@ node {
 			string(name: 'GIT_BRANCH', description: ' Branch Name', defaultValue: "feature/dev"),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, 	description: 'Tagging required or not')
 		]),
-		pipelineTriggers([ cron('H 23 * * *') ])
+		pipelineTriggers([ cron('H 19,21 * * *') ])
 	])
 
 //properties([pipelineTriggers([cron('H 23 * * *')])])
