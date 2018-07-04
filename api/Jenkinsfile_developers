@@ -7,7 +7,7 @@ node {
 		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '3']],
 		disableConcurrentBuilds(),
 		parameters([
-			string(name: 'GIT_BRANCH', description: 'API Branch Name', defaultValue: "master"),
+			string(name: 'GIT_BRANCH', description: 'API Branch Name', defaultValue: "feature/dev"),
 			//choice(choices: ["dev", "qa"].join("\n"), description: 'Properties Environment', name: 'PROP_ENV'),
 			string(name: 'DESTINATION_IP', description: 'IP of promotion env', defaultValue: "10.0.31.242"),
 			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Save image to a tar archive'),
@@ -45,8 +45,6 @@ node {
 					script: """ mvn help:evaluate -Dexpression=project.version -Dv=${BUILD_NUMBER} | grep -e '^[^\\[]'  """,
 					returnStdout: true
 					).trim()
-
-
 		}
 		echo "releasedVersion: ${releasedVersion}"
 
