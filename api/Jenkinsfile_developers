@@ -7,7 +7,7 @@ node {
 		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '3']],
 		disableConcurrentBuilds(),
 		parameters([
-			string(name: 'GIT_BRANCH', description: 'API Branch Name', defaultValue: "master"),
+			string(name: 'GIT_BRANCH', description: 'API Branch Name', defaultValue: "feature/dev"),
 			//choice(choices: ["dev", "qa"].join("\n"), description: 'Properties Environment', name: 'PROP_ENV'),
 			string(name: 'DESTINATION_IP', description: 'IP of promotion env', defaultValue: "10.0.31.242"),
 			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Save image to a tar archive'),
@@ -32,7 +32,6 @@ node {
 		def distroDirPath = "/tmp/jenkins/distro_api"
 		def applicationDir = "demandplannerapi"
 		def branchName = "${GIT_BRANCH}"
-		// TODO: comma separated IP
 		def destinationIP = "${DESTINATION_IP}"
 		// =========== USER DEFINED VARS ===========
 
@@ -46,10 +45,16 @@ node {
 					script: """ mvn help:evaluate -Dexpression=project.version -Dv=${BUILD_NUMBER} | grep -e '^[^\\[]'  """,
 					returnStdout: true
 					).trim()
-
-
 		}
 		echo "releasedVersion: ${releasedVersion}"
+
+		// TODO: comma separated IP, put this for stmt around loadimage, another two for each environment: NOT NOW
+		//DEV_ENVIRONMENT_IP, QA_ENVIRONMENT_IP 
+		def devBoxes = '0.0.0.0,1.1.1.2'
+		for (String i : devBoxes.split(",")) {
+	 		println i
+	 	}
+
 		build(applicationDir)
 		allTests(applicationDir)
 		sonarScanner(applicationDir)
