@@ -79,10 +79,10 @@ node {
 		// Success or failure, always send notifications
 		//utils.sendNotification(currentBuild.result)
 		mail (
-				subject: “Something is wrong with “ +
-				“${env.JOB_NAME} ${env.BUILD_ID}”,
-				to: ‘r.satti@accenture.com’,
-				body: ‘You should fix it’
+				subject: "Something is wrong with " +
+				"${env.JOB_NAME} ${env.BUILD_ID}",
+				to: 'r.satti@accenture.com',
+				body: 'You should fix it'
 			 )
 	}
 }
