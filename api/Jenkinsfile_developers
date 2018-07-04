@@ -78,13 +78,14 @@ node {
 		throw error
 	} finally {
 		// Success or failure, always send notifications
-		//utils.sendNotification(currentBuild.result)
+		utils.sendNotification(currentBuild.result)
+		/* Below CODE THROWS EXCEPTION: javax.mail.MessagingException: Could not connect to SMTP host: localhost, port: 465
 		mail (
 				subject: "Something is wrong with " +
 				"${env.JOB_NAME} ${env.BUILD_ID}",
 				to: 'r.satti@accenture.com',
 				body: 'You should fix it'
-			 )
+			 ) */
 	}
 }
 
@@ -97,7 +98,9 @@ stage('Deploy Approval') {
 }
 
 node {
-    stage('deploy to prod'){
+	def workspacePath = pwd()
+	echo "workspacePath in SECOND NODE: ${workspacePath}"
+    stage('deploy to QA'){
         deployImageToQA(artifactName, releasedVersion, "qa", destinationIP, utils)
     }
 }
