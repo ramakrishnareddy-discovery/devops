@@ -34,11 +34,11 @@ node {
 		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_ui.git'
 
 		// "/product/jenkins" folder should exist and have jenkins user permissions.
-		def distroDirPath = "/product/jenkins/distro_ui" //"/tmp/jenkins/distro_ui"
+		distroDirPath = "/product/jenkins/distro_ui" //"/tmp/jenkins/distro_ui"
 
-		def artifactName = 'demandplannerui'
+		artifactName = 'demandplannerui'
 		def applicationDir = 'demandplannerui'
-		def releasedVersion = "${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}"
+		releasedVersion = "${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}"
 		def branchName = "${GIT_BRANCH}"
 		def devServerIP = "${DEV_BOX_IP}"
 		qaServerIP = "${QA_BOX_IP}"
