@@ -26,7 +26,7 @@ node {
 		// =========== USER DEFINED VARS ===========
 		def workspacePath = pwd()
 		echo "workspacePath: ${workspacePath}"
-		
+
 		def mvnHome = tool name: "Maven_V3"
 		env.PATH = "${mvnHome}/bin:${env.PATH}"
 
@@ -35,12 +35,12 @@ node {
 
 		// "/product/jenkins" folder should exist and have jenkins user permissions.
 		distroDirPath =  "/product/jenkins/distro_api" //"/tmp/jenkins/distro_api" //"/product/jenkins/lib/distro_api"
-		
+
 		def applicationDir = "demandplannerapi"
-		def devServerIP = "${DEV_BOX_IP}"
+		def devServerIPString = "${DEV_BOX_IP}"
 		qaServerIP = "${QA_BOX_IP}"
 		// =========== USER DEFINED VARS ===========
-		
+
 		checkout(applicationDir, GIT_BRANCH, apiRepoUrl, distroDirPath, distroRepoUrl, utils)
 		// Since artifactName and releasedVersion fetching from POM.xml, should execute after cloning the repo.
 		artifactName = utils.getArtifact(applicationDir)
@@ -69,16 +69,19 @@ node {
 		saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils)
 		tagBranch(applicationDir, apiRepoUrl, releasedVersion, GIT_TAG, utils)
 
-		// TODO: remove the tar files from server /home directory : 
+		// TODO: remove the tar files from server /home directory :
 		// TODO: try to execute Shell Script on Server : https://medium.com/devopslinks/a-hacky-hackers-guide-to-hacking-together-jenkins-scripted-pipelines-part-3-aca73bd33eaa
-		if (devServerIP != null && devServerIP != "") {
-			dockerClean(artifactName, devServerIP, utils)
-			loadImage(distroDirPath, artifactName, releasedVersion, devServerIP, utils)
-			stage('deploy to DEV'){
-				utils.stopContainer(artifactName, devServerIP)
-				deployImage(artifactName, releasedVersion, "dev", devServerIP, utils)
+		if (devServerIPString != null && devServerIPString != "") {
+			for (String devServerIP : devServerIPString.split(",")) {
+				dockerClean(artifactName, devServerIP, utils)
+				loadImage(distroDirPath, artifactName, releasedVersion, devServerIP, utils)
+				stage('deploy to DEV'){
+					utils.stopContainer(artifactName, devServerIP)
+					deployImage(artifactName, releasedVersion, "dev", devServerIP, utils)
+				}
 			}
-		} else {
+		}
+		else {
 			echo "Please provide dev server IP"
 			throw error
 		}
@@ -90,8 +93,10 @@ node {
 	} finally {
 		// Success or failure, always send notifications
 		utils.sendNotification(currentBuild.result)
+		//mail subject: "Build finished unsuccessfully", body: "It appears that ${env.BUILD_URL}", to: "r.satti@accenture.com", from: "noreply_jenkins@qcom.accenture.com"
 	}
 }
+
 
 stage('Deploy Approval') {
 	def userInput = input(
