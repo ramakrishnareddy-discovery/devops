@@ -2,7 +2,7 @@
 @Library('JenkinsSharedLibrary') _
 
 // =========== GLOBAL VARS ===========
-def artifactName, releasedVersion , qaServerIP, distroDirPath
+def artifactName, releasedVersion , qaServerIP, distroDirPath, utils
 // =========== GLOBAL VARS ===========
 
 // TODO: MAJOR_VERSION AND MINOR_VERSION PENDING. Refer: http://blog.soebes.de/blog/2017/04/02/maven-pom-files-without-a-version-in-it/
@@ -21,7 +21,7 @@ node {
 	projectProperties.add(pipelineTriggers([upstream(threshold: hudson.model.Result.SUCCESS,upstreamProjects: "common")]))
 	properties(projectProperties)
 
-	Utils utils = new Utils()
+	utils = new Utils()
 	try {
 		// =========== USER DEFINED VARS ===========
 		def workspacePath = pwd()
