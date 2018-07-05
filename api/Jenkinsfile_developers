@@ -110,7 +110,7 @@ node {
 			if (qaServerIP != null && qaServerIP != "") {
 				dockerClean(artifactName, qaServerIP, utils)
 				loadImage(distroDirPath, artifactName, releasedVersion, qaServerIP, utils)
-				utils.stopContainer(artifactName, devServerIP)
+				utils.stopContainer(artifactName, qaServerIP)
 				deployImage(artifactName, releasedVersion, "qa", qaServerIP, utils)
 			}
 		}
