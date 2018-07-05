@@ -40,6 +40,7 @@ node {
 		def devServerIP = "${DEV_BOX_IP}"
 		qaServerIP = "${QA_BOX_IP}"
 		// =========== USER DEFINED VARS ===========
+		
 		checkout(applicationDir, GIT_BRANCH, apiRepoUrl, distroDirPath, distroRepoUrl, utils)
 		// Since artifactName and releasedVersion fetching from POM.xml, should execute after cloning the repo.
 		artifactName = utils.getArtifact(applicationDir)
@@ -166,18 +167,12 @@ def dockerBuild() {
 	}
 }
 
-def saveImage(applicationDir, distroDirPath, artifactName, releasedVersion,GIT_IMAGE_PUSH, utils) {
+def saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils) {
 	stage('Save Image to Tar Archive') {
-		if (GIT_IMAGE_PUSH.toBoolean()) {
-			echo "Save Image to Tar Archive and pushing Tar to Git Repo"
-			utils.saveImageToFS(applicationDir, distroDirPath, artifactName, releasedVersion)
-			utils.saveImageToRepo(applicationDir, distroDirPath, artifactName, releasedVersion)
-		} else {
-			echo "Save Image to Tar Archive and Copy image to ${distroDirPath}"
-			utils.saveImageToFS(applicationDir, distroDirPath, artifactName, releasedVersion)
-		}
+		utils.saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH)
 	}
 }
+
 
 def tagBranch(applicationDir, apiRepoUrl, releasedVersion,GIT_TAG, utils) {
 	if (GIT_TAG.toBoolean()) {
