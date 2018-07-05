@@ -63,7 +63,7 @@ node {
 			utils.uiDockerBuild(applicationDir, artifactName, releasedVersion)
 		}
 
-		utils.saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils)
+		saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils)
 		tagBranch(applicationDir, uiRepoUrl, releasedVersion, GIT_TAG, utils)
 
 		// TODO: remove the tar files from server /home directory :
