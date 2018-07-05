@@ -2,10 +2,10 @@
 @Library('JenkinsSharedLibrary') _
 
 // =========== GLOBAL VARS ===========
-def artifactName, releasedVersion , qaServerIP
+def artifactName, releasedVersion , qaServerIP, distroDirPath
 // =========== GLOBAL VARS ===========
 
-
+// TODO: MAJOR_VERSION AND MINOR_VERSION PENDING. Refer: http://blog.soebes.de/blog/2017/04/02/maven-pom-files-without-a-version-in-it/
 node {
 	def projectProperties = [
 		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '10']],
@@ -32,10 +32,10 @@ node {
 
 		def apiRepoUrl = 'ssh://git@innersource.accenture.com/appq/demandplannerapi.git'
 		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_api.git'
-		def distroDirPath = "/product/jenkins/distro_api" //"/tmp/jenkins/distro_api"
+		distroDirPath = "/product/jenkins/distro_api" //"/tmp/jenkins/distro_api"
 		def applicationDir = "demandplannerapi"
 		def devServerIP = "${DEV_BOX_IP}"
-		def qaServerIP = "${QA_BOX_IP}"
+		qaServerIP = "${QA_BOX_IP}"
 		// =========== USER DEFINED VARS ===========
 
 
@@ -103,6 +103,7 @@ node {
 		echo "artifactName: ${artifactName}"
 		echo "releasedVersion: ${releasedVersion}"
 		echo "qaServerIP: ${qaServerIP}"
+		echo "distroDirPath: ${distroDirPath}"
 		stage('deploy to QA') {
 			if (qaServerIP != null && qaServerIP != "") {
 				dockerClean(artifactName, qaServerIP)
