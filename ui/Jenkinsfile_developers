@@ -59,7 +59,7 @@ node {
 
 		stage("SonarQube Quality Gate") { utils.processQualityGate() }
 
-		dockerClean(artifactName, devServerIP, utils)  // To clean images created on Jenkins BOX
+		removeImages(artifactName)  // To clean images created on Jenkins BOX
 		
 		stage('Docker Build') {
 			utils.uiDockerBuild(applicationDir, artifactName, releasedVersion)
