@@ -20,7 +20,7 @@ node {
 
 	try {
 		// =========== USER DEFINED VARS ===========
-		def workspacePath = pwd()
+		def workspacePath = pwd()		
 		def commonRepoUrl = "ssh://git@innersource.accenture.com/appq/common.git"
 		def applicationDir = "common"
 		// =========== USER DEFINED VARS ===========

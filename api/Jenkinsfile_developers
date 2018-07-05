@@ -1,47 +1,46 @@
 #!/usr/bin/env groovy
 @Library('JenkinsSharedLibrary') _
 
-//node("jenkins-slave")
+// =========== GLOBAL VARS ===========
+Utils utils = new Utils()
+def mvnHome = tool name: "Maven_V3"
+env.PATH = "${mvnHome}/bin:${env.PATH}"
+def artifactName, releasedVersion , qaServerIP
+// =========== GLOBAL VARS ===========
+
+
 node {
 	def projectProperties = [
-		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '3']],
+		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '10']],
 		disableConcurrentBuilds(),
 		parameters([
 			string(name: 'GIT_BRANCH', description: 'API Branch Name', defaultValue: "feature/dev"),
-			//choice(choices: ["dev", "qa"].join("\n"), description: 'Properties Environment', name: 'PROP_ENV'),
-			string(name: 'DESTINATION_IP', description: 'IP of promotion env', defaultValue: "10.0.31.242"),
+			string(name: 'DEV_BOX_IP', description: '', defaultValue: "10.0.31.242"),
+			string(name: 'QA_BOX_IP', description: '', defaultValue: "10.0.31.242"),
 			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Save image to a tar archive'),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not')
 		]),
 	]
 	projectProperties.add(pipelineTriggers([upstream(threshold: hudson.model.Result.SUCCESS,upstreamProjects: "common")]))
-	//projectProperties.add(pipelineTriggers([cron('H 21 * * *')]))
-	// Trigger build @12 and 4 PM on Week Days -- DISABLING AS THE UPSTREAM JOB WILL TRIGGER THIS BUILD
-	//projectProperties.add(pipelineTriggers([cron('0 12, 16 * * 1-5')]))
-
 	properties(projectProperties)
-
-	Utils utils = new Utils()
 
 	try {
 		// =========== USER DEFINED VARS ===========
 		def workspacePath = pwd()
 		echo "workspacePath: ${workspacePath}"
-		def mvnHome = tool name: "Maven_V3"
-		env.PATH = "${mvnHome}/bin:${env.PATH}"
 		def apiRepoUrl = 'ssh://git@innersource.accenture.com/appq/demandplannerapi.git'
 		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_api.git'
-		def distroDirPath = "/tmp/jenkins/distro_api"
+		def distroDirPath = "/product/jenkins/distro_api" //"/tmp/jenkins/distro_api"
 		def applicationDir = "demandplannerapi"
-		def branchName = "${GIT_BRANCH}"
-		def destinationIP = "${DESTINATION_IP}"
+		def devServerIP = "${DEV_BOX_IP}"
+		def qaServerIP = "${QA_BOX_IP}"
 		// =========== USER DEFINED VARS ===========
 
 
-		checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl,utils)
+		checkout(applicationDir, GIT_BRANCH, apiRepoUrl, distroDirPath, distroRepoUrl)
 		// Since artifactName and releasedVersion fetching from POM.xml, should execute after cloning the repo.
-		def artifactName = utils.getArtifact("demandplannerapi")
-		def releasedVersion
+		artifactName = utils.getArtifact(applicationDir)
+
 		dir(applicationDir) {
 			releasedVersion = sh (
 					script: """ mvn help:evaluate -Dexpression=project.version -Dv=${BUILD_NUMBER} | grep -e '^[^\\[]'  """,
@@ -51,25 +50,33 @@ node {
 		echo "releasedVersion: ${releasedVersion}"
 
 		// TODO: comma separated IP, put this for stmt around loadimage, another two for each environment: NOT NOW
-		//DEV_ENVIRONMENT_IP, QA_ENVIRONMENT_IP 
+		//DEV_ENVIRONMENT_IP, QA_ENVIRONMENT_IP
 		def devBoxes = '0.0.0.0,1.1.1.2'
 		for (String i : devBoxes.split(",")) {
-	 		println i
-	 	}
+			println i
+		}
 
 		build(applicationDir)
 		allTests(applicationDir)
 		sonarScanner(applicationDir)
-		allCodeQualityTests(utils)
-		dockerClean(artifactName,utils)
+		allCodeQualityTests()
 		dockerBuild()
-		saveImage(applicationDir, distroDirPath, artifactName, releasedVersion,GIT_IMAGE_PUSH, utils)
-		tagBranch(applicationDir, apiRepoUrl, releasedVersion,GIT_TAG, utils)
-		// PROP_ENV = dev
-		deployToDev(artifactName, releasedVersion, "dev", utils)
-		loadImage(distroDirPath, artifactName, releasedVersion, destinationIP,GIT_IMAGE_PUSH, utils)
-		// PROP_ENV = qa
-		deployImageToQA(artifactName, releasedVersion, "qa", destinationIP, utils)
+		saveImage(applicationDir, distroDirPath, artifactName, releasedVersion,GIT_IMAGE_PUSH)
+		tagBranch(applicationDir, apiRepoUrl, releasedVersion,GIT_TAG)
+
+		// TODO: remove the tar files from server /home directory : 
+		// TODO: try to execute Shell Script on Server : https://medium.com/devopslinks/a-hacky-hackers-guide-to-hacking-together-jenkins-scripted-pipelines-part-3-aca73bd33eaa
+		if (devServerIP != null && devServerIP != "") {
+			dockerClean(artifactName, devServerIP)
+			loadImage(distroDirPath, artifactName, releasedVersion, devServerIP)
+			stage('deploy to DEV'){
+				utils.stopContainer(artifactName, devServerIP)
+				deployImage(artifactName, releasedVersion, "dev", devServerIP)
+			}
+		} else {
+			echo "Please provide dev server IP"
+			throw error
+		}
 	}catch (error) {
 		println error
 		// If there was an exception thrown, the build failed
@@ -81,8 +88,40 @@ node {
 	}
 }
 
+stage('Deploy Approval') {
+	def userInput = input(
+			id: 'deployToQA', message: 'Please Input Your Option:', ok: 'ok', parameters: [string(defaultValue: '', description: 'Do you wish to promote build to QA?', name: 'Deploy Approval?')])
+	echo ("Deploy Approval: " + userInput)
+}
 
-def checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl,utils) {
+node {
+	try {
+		def workspacePath = pwd()
+		echo "workspacePath in SECOND NODE: ${workspacePath}"
+		echo "artifactName: ${artifactName}"
+		echo "releasedVersion: ${releasedVersion}"
+		echo "qaServerIP: ${qaServerIP}"
+		stage('deploy to QA') {
+			if (qaServerIP != null && qaServerIP != "") {
+				dockerClean(artifactName, qaServerIP)
+				loadImage(distroDirPath, artifactName, releasedVersion, qaServerIP)
+				utils.stopContainer(artifactName, devServerIP)
+				deployImage(artifactName, releasedVersion, "qa", qaServerIP)
+			}
+		}
+	} catch (error) {
+		println error
+		// If there was an exception thrown, the build failed
+		currentBuild.result = 'FAILURE'
+		throw error
+	} finally {
+		// Success or failure, always send notifications
+		utils.sendNotification(currentBuild.result)
+	}
+}
+
+
+def checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl) {
 	stage('Git Checkout') {
 		utils.sourceCodeCheckout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl)
 	}
@@ -107,13 +146,10 @@ def sonarScanner(applicationDir) {
 	}
 }
 
-def allCodeQualityTests(utils) {
+def allCodeQualityTests() {
 	stage("SonarQube Quality Gate") { utils.processQualityGate() }
 }
 
-def dockerClean(artifactName,utils) {
-	stage('Docker Clean'){ utils.removeImages(artifactName) }
-}
 
 def dockerBuild() {
 	stage('Docker Build'){
@@ -125,7 +161,7 @@ def dockerBuild() {
 	}
 }
 
-def saveImage(applicationDir, distroDirPath, artifactName, releasedVersion,GIT_IMAGE_PUSH, utils) {
+def saveImage(applicationDir, distroDirPath, artifactName, releasedVersion,GIT_IMAGE_PUSH) {
 	stage('Save Image to Tar Archive') {
 		if (GIT_IMAGE_PUSH.toBoolean()) {
 			echo "Save Image to Tar Archive and pushing Tar to Git Repo"
@@ -138,7 +174,7 @@ def saveImage(applicationDir, distroDirPath, artifactName, releasedVersion,GIT_I
 	}
 }
 
-def tagBranch(applicationDir, apiRepoUrl, releasedVersion,GIT_TAG, utils) {
+def tagBranch(applicationDir, apiRepoUrl, releasedVersion,GIT_TAG) {
 	if (GIT_TAG.toBoolean()) {
 		stage('Tag Branch') {
 			utils.tagBranch(applicationDir, apiRepoUrl, releasedVersion)
@@ -147,24 +183,61 @@ def tagBranch(applicationDir, apiRepoUrl, releasedVersion,GIT_TAG, utils) {
 	}
 }
 
+def dockerClean(artifactName, serverIP) {
+	//stage('Docker Clean'){
+	utils.removeDanglingImages(artifactName, serverIP)
+	//}
+}
+
+def loadImage(distroDirPath, artifactName, releasedVersion, destinationIP) {
+	//stage('load Image'){
+	utils.loadImage(distroDirPath, artifactName, releasedVersion, destinationIP)
+	//}
+}
+
+def deployImage(artifactName, releasedVersion, PROP_ENV, destinationIP) {
+	utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP)
+}
+
+
 // Assuming jenkins box is Dev BOX and deploying application to local box
-def deployToDev(artifactName, releasedVersion, PROP_ENV, utils) {
+def deployToDev(artifactName, releasedVersion, PROP_ENV) {
 	stage('deploy to DEV'){
 		utils.deployAPIToDev(artifactName, releasedVersion, PROP_ENV)
 	}
 }
 
-def loadImage(distroDirPath, artifactName, releasedVersion, destinationIP,GIT_IMAGE_PUSH, utils) {
-	stage('load Image'){
-		utils.loadImage(distroDirPath, artifactName, releasedVersion, destinationIP)
-	}
-}
 
-def deployImageToQA(artifactName, releasedVersion, PROP_ENV, destinationIP, utils) {
-	stage('deploy to QA'){
-		timeout(activity: true, time: 20, unit: 'SECONDS') {
-			input message: 'Deploy to QA Env?', ok: 'Deploy'
-		}
-		utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP)
-	}
-}
+/*  
+ // This  method add an input step with timeout that continues if timeout is reached using a default value.
+ stage('deploy to QA'){
+ userAborted = false
+ startMillis = System.currentTimeMillis()
+ timeoutMillis = 10000
+ try {
+ timeout(time: timeoutMillis, unit: 'MILLISECONDS') {
+ input 'Do you approve?'
+ }
+ } catch (org.jenkinsci.plugins.workflow.steps.FlowInterruptedException e) {
+ cause = e.causes.get(0)
+ echo "Aborted by " + cause.getUser().toString()
+ if (cause.getUser().toString() != 'SYSTEM') {
+ startMillis = System.currentTimeMillis()
+ } else {
+ endMillis = System.currentTimeMillis()
+ if (endMillis - startMillis >= timeoutMillis) {
+ echo "Approval timed out. Continuing with deployment."
+ } else {
+ userAborted = true
+ echo "SYSTEM aborted, but looks like timeout period didn't complete. Aborting."
+ }
+ }
+ }
+ if (userAborted) {
+ currentBuild.result = 'ABORTED'
+ } else {
+ currentBuild.result = 'SUCCESS'
+ utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP)
+ }
+ }
+ */
