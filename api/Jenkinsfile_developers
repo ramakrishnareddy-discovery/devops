@@ -32,7 +32,10 @@ node {
 
 		def apiRepoUrl = 'ssh://git@innersource.accenture.com/appq/demandplannerapi.git'
 		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_api.git'
+
+		// "/product/jenkins" folder should exist and have jenkins user permissions.
 		distroDirPath =  "/product/jenkins/distro_api" //"/tmp/jenkins/distro_api" //"/product/jenkins/lib/distro_api"
+		
 		def applicationDir = "demandplannerapi"
 		def devServerIP = "${DEV_BOX_IP}"
 		qaServerIP = "${QA_BOX_IP}"
@@ -95,6 +98,7 @@ stage('Deploy Approval') {
 }
 
 node {
+	Utils utils = new Utils()
 	try {
 		def workspacePath = pwd()
 		echo "workspacePath in SECOND NODE: ${workspacePath}"
