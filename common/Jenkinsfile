@@ -43,8 +43,7 @@ node {
 }
 
 def checkout(applicationDir, commonRepoUrl, branchName) {
-	stage('Git Checkout') { { utils.commonAppCheckout(applicationDir, commonRepoUrl, branchName) }
-	}
+	stage('Git Checkout') { utils.commonAppCheckout(applicationDir, commonRepoUrl, branchName) }
 }
 
 def build(applicationDir){
