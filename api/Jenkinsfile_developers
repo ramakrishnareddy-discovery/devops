@@ -2,7 +2,7 @@
 @Library('JenkinsSharedLibrary') _
 
 // =========== GLOBAL VARS ===========
-def artifactName, releasedVersion , qaServerIP, distroDirPath
+def artifactName, releasedVersion , qaServerIPString, distroDirPath
 // =========== GLOBAL VARS ===========
 
 // TODO: MAJOR_VERSION AND MINOR_VERSION PENDING. Refer: http://blog.soebes.de/blog/2017/04/02/maven-pom-files-without-a-version-in-it/
@@ -38,7 +38,7 @@ node {
 
 		def applicationDir = "demandplannerapi"
 		def devServerIPString = "${DEV_BOX_IP}"
-		qaServerIP = "${QA_BOX_IP}"
+		qaServerIPString = "${QA_BOX_IP}"
 		// =========== USER DEFINED VARS ===========
 
 		checkout(applicationDir, GIT_BRANCH, apiRepoUrl, distroDirPath, distroRepoUrl, utils)
@@ -111,14 +111,16 @@ node {
 		echo "workspacePath in SECOND NODE: ${workspacePath}"
 		echo "artifactName: ${artifactName}"
 		echo "releasedVersion: ${releasedVersion}"
-		echo "qaServerIP: ${qaServerIP}"
+		echo "qaServerIPString: ${qaServerIPString}"
 		echo "distroDirPath: ${distroDirPath}"
 		stage('deploy to QA') {
-			if (qaServerIP != null && qaServerIP != "") {
-				dockerClean(artifactName, qaServerIP, utils)
-				loadImage(distroDirPath, artifactName, releasedVersion, qaServerIP, utils)
-				utils.stopContainer(artifactName, qaServerIP)
-				deployImage(artifactName, releasedVersion, "qa", qaServerIP, utils)
+			if (qaServerIPString != null && qaServerIPString != "") {
+				for (String qaServerIP : qaServerIPString.split(",")) {
+					dockerClean(artifactName, qaServerIP, utils)
+					loadImage(distroDirPath, artifactName, releasedVersion, qaServerIP, utils)
+					utils.stopContainer(artifactName, qaServerIP)
+					deployImage(artifactName, releasedVersion, "qa", qaServerIP, utils)
+				}	
 			}
 		}
 	} catch (error) {
