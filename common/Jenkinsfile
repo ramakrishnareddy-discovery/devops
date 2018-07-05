@@ -2,7 +2,7 @@
 @Library('JenkinsSharedLibrary') _
 
 // =========== GLOBAL VARS ===========
-Utils utils = new Utils()
+Utils utils
 def mvnHome = tool name: "Maven_V3"
 env.PATH = "${mvnHome}/bin:${env.PATH}"
 // =========== GLOBAL VARS ===========
@@ -23,6 +23,7 @@ node {
 		def workspacePath = pwd()		
 		def commonRepoUrl = "ssh://git@innersource.accenture.com/appq/common.git"
 		def applicationDir = "common"
+		utils = new Utils()
 		// =========== USER DEFINED VARS ===========
 
 		checkout(applicationDir, commonRepoUrl, GIT_BRANCH)
