@@ -12,6 +12,7 @@ node {
 		])
 	])
 
+	Utils utils = new Utils()
 	try {
 		// =========== USER DEFINED VARS ===========
 		def mvnHome = tool name: "Maven_V3"
@@ -20,7 +21,7 @@ node {
 		def workspacePath = pwd()		
 		def commonRepoUrl = "ssh://git@innersource.accenture.com/appq/common.git"
 		def applicationDir = "common"
-		Utils utils = new Utils()
+		
 		// =========== USER DEFINED VARS ===========
 
 		checkout(applicationDir, commonRepoUrl, GIT_BRANCH, utils)
