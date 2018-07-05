@@ -61,7 +61,7 @@ node {
 		build(applicationDir)
 		allTests(applicationDir)
 		sonarScanner(applicationDir)
-		allCodeQualityTests(checkout)
+		allCodeQualityTests(utils)
 		dockerBuild()
 		saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils)
 		tagBranch(applicationDir, apiRepoUrl, releasedVersion, GIT_TAG, utils)
@@ -124,7 +124,7 @@ node {
 }
 
 
-def checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl, checkout) {
+def checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl, utils) {
 	stage('Git Checkout') {
 		utils.sourceCodeCheckout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl)
 	}
