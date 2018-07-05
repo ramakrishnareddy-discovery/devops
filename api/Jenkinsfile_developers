@@ -12,7 +12,7 @@ node {
 		disableConcurrentBuilds(),
 		parameters([
 			string(name: 'GIT_BRANCH', description: 'API Branch Name', defaultValue: "feature/dev"),
-			string(name: 'DEV_BOX_IP', description: '', defaultValue: "10.0.31.242"),
+			string(name: 'DEV_BOX_IP', description: '', defaultValue: "10.0.31.138"),
 			string(name: 'QA_BOX_IP', description: '', defaultValue: "10.0.31.242"),
 			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Save image to a tar archive'),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not')
