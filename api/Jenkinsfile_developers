@@ -64,7 +64,7 @@ node {
 		allTests(applicationDir)
 		sonarScanner(applicationDir)
 		allCodeQualityTests(utils)
-		removeImages(artifactName)  // To clean images created on Jenkins BOX
+		utils.removeImages(artifactName)  // To clean images created on Jenkins BOX
 		dockerBuild()
 		saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils)
 		tagBranch(applicationDir, apiRepoUrl, releasedVersion, GIT_TAG, utils)
