@@ -3,8 +3,6 @@
 
 // =========== GLOBAL VARS ===========
 Utils utils
-def mvnHome = tool name: "Maven_V3"
-env.PATH = "${mvnHome}/bin:${env.PATH}"
 // =========== GLOBAL VARS ===========
 
 node {
@@ -20,6 +18,9 @@ node {
 
 	try {
 		// =========== USER DEFINED VARS ===========
+		def mvnHome = tool name: "Maven_V3"
+		env.PATH = "${mvnHome}/bin:${env.PATH}"
+
 		def workspacePath = pwd()		
 		def commonRepoUrl = "ssh://git@innersource.accenture.com/appq/common.git"
 		def applicationDir = "common"
