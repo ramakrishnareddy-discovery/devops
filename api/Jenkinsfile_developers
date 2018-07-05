@@ -2,9 +2,6 @@
 @Library('JenkinsSharedLibrary') _
 
 // =========== GLOBAL VARS ===========
-Utils utils = new Utils()
-def mvnHome = tool name: "Maven_V3"
-env.PATH = "${mvnHome}/bin:${env.PATH}"
 def artifactName, releasedVersion , qaServerIP
 // =========== GLOBAL VARS ===========
 
@@ -24,10 +21,15 @@ node {
 	projectProperties.add(pipelineTriggers([upstream(threshold: hudson.model.Result.SUCCESS,upstreamProjects: "common")]))
 	properties(projectProperties)
 
+	Utils utils = new Utils()
 	try {
 		// =========== USER DEFINED VARS ===========
 		def workspacePath = pwd()
 		echo "workspacePath: ${workspacePath}"
+		
+		def mvnHome = tool name: "Maven_V3"
+		env.PATH = "${mvnHome}/bin:${env.PATH}"
+
 		def apiRepoUrl = 'ssh://git@innersource.accenture.com/appq/demandplannerapi.git'
 		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_api.git'
 		def distroDirPath = "/product/jenkins/distro_api" //"/tmp/jenkins/distro_api"
