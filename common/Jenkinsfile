@@ -1,10 +1,6 @@
 #!/usr/bin/env groovy
 @Library('JenkinsSharedLibrary') _
 
-// =========== GLOBAL VARS ===========
-def utils
-// =========== GLOBAL VARS ===========
-
 node {
 	properties([
 		[$class: 'BuildDiscarderProperty', strategy:
@@ -24,14 +20,14 @@ node {
 		def workspacePath = pwd()		
 		def commonRepoUrl = "ssh://git@innersource.accenture.com/appq/common.git"
 		def applicationDir = "common"
-		utils = new Utils()
+		Utils utils = new Utils()
 		// =========== USER DEFINED VARS ===========
 
-		checkout(applicationDir, commonRepoUrl, GIT_BRANCH)
+		checkout(applicationDir, commonRepoUrl, GIT_BRANCH, utils)
 		build(applicationDir)
 		sonarScanner(applicationDir)
-		allCodeQualityTests()
-		tagBranch(applicationDir, commonRepoUrl, GIT_TAG)
+		allCodeQualityTests(utils)
+		tagBranch(applicationDir, commonRepoUrl, GIT_TAG, utils)
 
 	}catch (error) {
 		println error
@@ -44,7 +40,7 @@ node {
 	}
 }
 
-def checkout(applicationDir, commonRepoUrl, branchName) {
+def checkout(applicationDir, commonRepoUrl, branchName, utils) {
 	stage('Git Checkout') { utils.commonAppCheckout(applicationDir, commonRepoUrl, branchName) }
 }
 
@@ -64,11 +60,11 @@ def sonarScanner(applicationDir) {
 	}
 }
 
-def allCodeQualityTests() {
+def allCodeQualityTests(utils) {
 	stage("SonarQube Quality Gate") { utils.processQualityGate() }
 }
 
-def tagBranch(applicationDir, commonRepoUrl, GIT_TAG) {
+def tagBranch(applicationDir, commonRepoUrl, GIT_TAG, utils) {
 	if (GIT_TAG.toBoolean()) {
 		stage('Tag Branch') {
 			//Fetching Released Version from POM.xml and appending BUILD_NUMBER
