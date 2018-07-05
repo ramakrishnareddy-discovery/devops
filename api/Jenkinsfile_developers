@@ -95,7 +95,7 @@ node {
 
 stage('Deploy Approval') {
 	def userInput = input(
-			id: 'deployToQA', message: 'Please Input Your Option:', ok: 'ok', parameters: [string(defaultValue: '', description: 'Do you wish to promote build to QA?', name: 'Deploy Approval?')])
+			id: 'deployToQA', message: 'Do you wish to promote build to QA?', ok: 'ok', parameters: [string(defaultValue: 'Approved', description: '', name: 'Deploy Approval?')])
 	echo ("Deploy Approval: " + userInput)
 }
 
