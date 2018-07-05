@@ -2,7 +2,7 @@
 @Library('JenkinsSharedLibrary') _
 
 // =========== GLOBAL VARS ===========
-Utils utils
+def utils
 // =========== GLOBAL VARS ===========
 
 node {
