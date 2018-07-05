@@ -2,7 +2,7 @@
 @Library('JenkinsSharedLibrary') _
 
 // =========== GLOBAL VARS ===========
-def artifactName, releasedVersion , qaServerIP, distroDirPath, utils
+def artifactName, releasedVersion , qaServerIP, distroDirPath
 // =========== GLOBAL VARS ===========
 
 // TODO: MAJOR_VERSION AND MINOR_VERSION PENDING. Refer: http://blog.soebes.de/blog/2017/04/02/maven-pom-files-without-a-version-in-it/
@@ -21,7 +21,7 @@ node {
 	projectProperties.add(pipelineTriggers([upstream(threshold: hudson.model.Result.SUCCESS,upstreamProjects: "common")]))
 	properties(projectProperties)
 
-	utils = new Utils()
+	Utils utils = new Utils()
 	try {
 		// =========== USER DEFINED VARS ===========
 		def workspacePath = pwd()
@@ -39,7 +39,7 @@ node {
 		// =========== USER DEFINED VARS ===========
 
 
-		checkout(applicationDir, GIT_BRANCH, apiRepoUrl, distroDirPath, distroRepoUrl)
+		checkout(applicationDir, GIT_BRANCH, apiRepoUrl, distroDirPath, distroRepoUrl, utils)
 		// Since artifactName and releasedVersion fetching from POM.xml, should execute after cloning the repo.
 		artifactName = utils.getArtifact(applicationDir)
 
@@ -61,19 +61,19 @@ node {
 		build(applicationDir)
 		allTests(applicationDir)
 		sonarScanner(applicationDir)
-		allCodeQualityTests()
+		allCodeQualityTests(checkout)
 		dockerBuild()
-		saveImage(applicationDir, distroDirPath, artifactName, releasedVersion,GIT_IMAGE_PUSH)
-		tagBranch(applicationDir, apiRepoUrl, releasedVersion,GIT_TAG)
+		saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils)
+		tagBranch(applicationDir, apiRepoUrl, releasedVersion, GIT_TAG, utils)
 
 		// TODO: remove the tar files from server /home directory : 
 		// TODO: try to execute Shell Script on Server : https://medium.com/devopslinks/a-hacky-hackers-guide-to-hacking-together-jenkins-scripted-pipelines-part-3-aca73bd33eaa
 		if (devServerIP != null && devServerIP != "") {
-			dockerClean(artifactName, devServerIP)
-			loadImage(distroDirPath, artifactName, releasedVersion, devServerIP)
+			dockerClean(artifactName, devServerIP, utils)
+			loadImage(distroDirPath, artifactName, releasedVersion, devServerIP, utils)
 			stage('deploy to DEV'){
 				utils.stopContainer(artifactName, devServerIP)
-				deployImage(artifactName, releasedVersion, "dev", devServerIP)
+				deployImage(artifactName, releasedVersion, "dev", devServerIP, utils)
 			}
 		} else {
 			echo "Please provide dev server IP"
@@ -106,10 +106,10 @@ node {
 		echo "distroDirPath: ${distroDirPath}"
 		stage('deploy to QA') {
 			if (qaServerIP != null && qaServerIP != "") {
-				dockerClean(artifactName, qaServerIP)
-				loadImage(distroDirPath, artifactName, releasedVersion, qaServerIP)
+				dockerClean(artifactName, qaServerIP, utils)
+				loadImage(distroDirPath, artifactName, releasedVersion, qaServerIP, utils)
 				utils.stopContainer(artifactName, devServerIP)
-				deployImage(artifactName, releasedVersion, "qa", qaServerIP)
+				deployImage(artifactName, releasedVersion, "qa", qaServerIP, utils)
 			}
 		}
 	} catch (error) {
@@ -124,7 +124,7 @@ node {
 }
 
 
-def checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl) {
+def checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl, checkout) {
 	stage('Git Checkout') {
 		utils.sourceCodeCheckout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl)
 	}
@@ -149,7 +149,7 @@ def sonarScanner(applicationDir) {
 	}
 }
 
-def allCodeQualityTests() {
+def allCodeQualityTests(utils) {
 	stage("SonarQube Quality Gate") { utils.processQualityGate() }
 }
 
@@ -164,7 +164,7 @@ def dockerBuild() {
 	}
 }
 
-def saveImage(applicationDir, distroDirPath, artifactName, releasedVersion,GIT_IMAGE_PUSH) {
+def saveImage(applicationDir, distroDirPath, artifactName, releasedVersion,GIT_IMAGE_PUSH, utils) {
 	stage('Save Image to Tar Archive') {
 		if (GIT_IMAGE_PUSH.toBoolean()) {
 			echo "Save Image to Tar Archive and pushing Tar to Git Repo"
@@ -177,7 +177,7 @@ def saveImage(applicationDir, distroDirPath, artifactName, releasedVersion,GIT_I
 	}
 }
 
-def tagBranch(applicationDir, apiRepoUrl, releasedVersion,GIT_TAG) {
+def tagBranch(applicationDir, apiRepoUrl, releasedVersion,GIT_TAG, utils) {
 	if (GIT_TAG.toBoolean()) {
 		stage('Tag Branch') {
 			utils.tagBranch(applicationDir, apiRepoUrl, releasedVersion)
@@ -186,25 +186,25 @@ def tagBranch(applicationDir, apiRepoUrl, releasedVersion,GIT_TAG) {
 	}
 }
 
-def dockerClean(artifactName, serverIP) {
+def dockerClean(artifactName, serverIP, utils) {
 	//stage('Docker Clean'){
 	utils.removeDanglingImages(artifactName, serverIP)
 	//}
 }
 
-def loadImage(distroDirPath, artifactName, releasedVersion, destinationIP) {
+def loadImage(distroDirPath, artifactName, releasedVersion, destinationIP, utils) {
 	//stage('load Image'){
 	utils.loadImage(distroDirPath, artifactName, releasedVersion, destinationIP)
 	//}
 }
 
-def deployImage(artifactName, releasedVersion, PROP_ENV, destinationIP) {
+def deployImage(artifactName, releasedVersion, PROP_ENV, destinationIP, utils) {
 	utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP)
 }
 
 
 // Assuming jenkins box is Dev BOX and deploying application to local box
-def deployToDev(artifactName, releasedVersion, PROP_ENV) {
+def deployToDev(artifactName, releasedVersion, PROP_ENV, utils) {
 	stage('deploy to DEV'){
 		utils.deployAPIToDev(artifactName, releasedVersion, PROP_ENV)
 	}
