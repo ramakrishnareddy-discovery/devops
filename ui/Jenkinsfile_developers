@@ -70,11 +70,11 @@ node {
 		//saveImage  - BEGIN
 		if (GIT_IMAGE_PUSH.toBoolean()) {
 			echo "Save Image to Tar Archive and pushing Tar to Git Repo"
-			saveImageToFS(applicationDir, distroDirPath, artifactName, releasedVersion)
-			saveImageToRepo(applicationDir, distroDirPath, artifactName, releasedVersion)
+			utils.saveImageToFS(applicationDir, distroDirPath, artifactName, releasedVersion)
+			utils.saveImageToRepo(applicationDir, distroDirPath, artifactName, releasedVersion)
 		} else {
 			echo "Save Image to Tar Archive and Copy image to ${distroDirPath}"
-			saveImageToFS(applicationDir, distroDirPath, artifactName, releasedVersion)
+			utils.saveImageToFS(applicationDir, distroDirPath, artifactName, releasedVersion)
 		}
 		//saveImage  - END
 
