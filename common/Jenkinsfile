@@ -9,7 +9,8 @@ node {
 		parameters([
 			string(name: 'GIT_BRANCH', description: ' Branch Name', defaultValue: "feature/dev"),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, 	description: 'Tagging required or not')
-		])
+		]),
+		pipelineTriggers([ cron('H 6,11 * * *') ])
 	])
 
 	Utils utils = new Utils()
