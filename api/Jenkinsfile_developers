@@ -67,20 +67,6 @@ node {
 		utils.removeImages(artifactName)  // To clean images created on Jenkins BOX
 		dockerBuild()
 		saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils)
-
-		/*
-			//saveImage  - BEGIN
-			if (GIT_IMAGE_PUSH.toBoolean()) {
-				echo "Save Image to Tar Archive and pushing Tar to Git Repo"
-				utils.saveImageToFS(applicationDir, distroDirPath, artifactName, releasedVersion)
-				utils.saveImageToRepo(applicationDir, distroDirPath, artifactName, releasedVersion)
-			} else {
-				echo "Save Image to Tar Archive and Copy image to ${distroDirPath}"
-				utils.saveImageToFS(applicationDir, distroDirPath, artifactName, releasedVersion)
-			}
-			//saveImage  - END
-		*/
-
 		tagBranch(applicationDir, apiRepoUrl, releasedVersion, GIT_TAG, utils)
 
 		// TODO: remove the tar files from server /home directory :
@@ -91,19 +77,6 @@ node {
 				loadImage(distroDirPath, artifactName, releasedVersion, devServerIP, utils)
 				stage('deploy to DEV'){
 					utils.stopContainer(artifactName, devServerIP)
-
-				/*
-					// stopContainer - BEING
-					try{
-						sh """
-							ssh centos@${serverIP} 'sudo su && docker ps --no-trunc -aqf \'name=${artifactName}\' | xargs -I {} docker stop {} &&
-							docker ps --no-trunc -aqf \'name=${artifactName}\' | xargs -I {} docker rm {}' 
-							"""
-					} catch(error) {
-						echo "${error}"
-					}
-					// stopContainer - END	
-				*/
 					deployImage(artifactName, releasedVersion, "dev", devServerIP, utils)
 				}
 			}
@@ -145,20 +118,7 @@ node {
 				for (String qaServerIP : qaServerIPString.split(",")) {
 					dockerClean(artifactName, qaServerIP, utils)
 					loadImage(distroDirPath, artifactName, releasedVersion, qaServerIP, utils)
-					//utils.stopContainer(artifactName, qaServerIP)
-
-					// stopContainer - BEING
-				try{
-					sh """
-						ssh centos@${serverIP} 'sudo su && docker ps --no-trunc -aqf \'name=${artifactName}\' | xargs -I {} docker stop {} &&
-						docker ps --no-trunc -aqf \'name=${artifactName}\' | xargs -I {} docker rm {}' 
-						"""
-				} catch(error) {
-					echo "${error}"
-				}
-				// stopContainer - END	
-
-
+					utils.stopContainer(artifactName, qaServerIP)
 					deployImage(artifactName, releasedVersion, "qa", qaServerIP, utils)
 				}	
 			}
