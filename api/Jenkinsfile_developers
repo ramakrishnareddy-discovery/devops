@@ -8,12 +8,12 @@ def artifactName, releasedVersion , qaServerIPString, distroDirPath
 // TODO: MAJOR_VERSION AND MINOR_VERSION PENDING. Refer: http://blog.soebes.de/blog/2017/04/02/maven-pom-files-without-a-version-in-it/
 node {
 	def projectProperties = [
-		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '10']],
+		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '3']],
 		disableConcurrentBuilds(),
 		parameters([
 			string(name: 'GIT_BRANCH', description: 'API Branch Name', defaultValue: "feature/dev"),
-			string(name: 'DEV_BOX_IP', description: '', defaultValue: "10.0.31.138"),
-			string(name: 'QA_BOX_IP', description: '', defaultValue: "10.0.31.242"),
+			string(name: 'DEV_BOX_IP', description: 'comma separated servers IP', defaultValue: "10.0.31.138"),
+			string(name: 'QA_BOX_IP', description: 'comma separated servers IP', defaultValue: "10.0.31.242"),
 			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Save image to a tar archive'),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not')
 		]),
@@ -52,14 +52,7 @@ node {
 					).trim()
 		}
 		echo "releasedVersion: ${releasedVersion}"
-
-		// TODO: comma separated IP, put this for stmt around loadimage, another two for each environment: NOT NOW
-		//DEV_ENVIRONMENT_IP, QA_ENVIRONMENT_IP
-		def devBoxes = '0.0.0.0,1.1.1.2'
-		for (String i : devBoxes.split(",")) {
-			println i
-		}
-
+	
 		build(applicationDir)
 		allTests(applicationDir)
 		sonarScanner(applicationDir)
@@ -67,20 +60,6 @@ node {
 		utils.removeImages(artifactName)  // To clean images created on Jenkins BOX
 		dockerBuild()
 		saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils)
-
-		/*
-			//saveImage  - BEGIN
-			if (GIT_IMAGE_PUSH.toBoolean()) {
-				echo "Save Image to Tar Archive and pushing Tar to Git Repo"
-				utils.saveImageToFS(applicationDir, distroDirPath, artifactName, releasedVersion)
-				utils.saveImageToRepo(applicationDir, distroDirPath, artifactName, releasedVersion)
-			} else {
-				echo "Save Image to Tar Archive and Copy image to ${distroDirPath}"
-				utils.saveImageToFS(applicationDir, distroDirPath, artifactName, releasedVersion)
-			}
-			//saveImage  - END
-		*/
-
 		tagBranch(applicationDir, apiRepoUrl, releasedVersion, GIT_TAG, utils)
 
 		// TODO: remove the tar files from server /home directory :
@@ -91,19 +70,6 @@ node {
 				loadImage(distroDirPath, artifactName, releasedVersion, devServerIP, utils)
 				stage('deploy to DEV'){
 					utils.stopContainer(artifactName, devServerIP)
-
-				/*
-					// stopContainer - BEING
-					try{
-						sh """
-							ssh centos@${serverIP} 'sudo su && docker ps --no-trunc -aqf \'name=${artifactName}\' | xargs -I {} docker stop {} &&
-							docker ps --no-trunc -aqf \'name=${artifactName}\' | xargs -I {} docker rm {}' 
-							"""
-					} catch(error) {
-						echo "${error}"
-					}
-					// stopContainer - END	
-				*/
 					deployImage(artifactName, releasedVersion, "dev", devServerIP, utils)
 				}
 			}
@@ -145,20 +111,7 @@ node {
 				for (String qaServerIP : qaServerIPString.split(",")) {
 					dockerClean(artifactName, qaServerIP, utils)
 					loadImage(distroDirPath, artifactName, releasedVersion, qaServerIP, utils)
-					//utils.stopContainer(artifactName, qaServerIP)
-
-					// stopContainer - BEING
-				try{
-					sh """
-						ssh centos@${serverIP} 'sudo su && docker ps --no-trunc -aqf \'name=${artifactName}\' | xargs -I {} docker stop {} &&
-						docker ps --no-trunc -aqf \'name=${artifactName}\' | xargs -I {} docker rm {}' 
-						"""
-				} catch(error) {
-					echo "${error}"
-				}
-				// stopContainer - END	
-
-
+					utils.stopContainer(artifactName, qaServerIP)
 					deployImage(artifactName, releasedVersion, "qa", qaServerIP, utils)
 				}	
 			}

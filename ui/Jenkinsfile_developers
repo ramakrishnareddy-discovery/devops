@@ -2,7 +2,7 @@
 @Library('JenkinsSharedLibrary') _
 
 // =========== GLOBAL VARS ===========
-def artifactName, releasedVersion , qaServerIP, distroDirPath
+def artifactName, releasedVersion , qaServerIPString, distroDirPath
 // =========== GLOBAL VARS ===========
 
 node {
@@ -13,8 +13,8 @@ node {
 			string(name: 'MAJOR_VERSION', description: '', defaultValue: "0"),
 			string(name: 'MINOR_VERSION', description: '', defaultValue: "SNAPSHOT"),
 			string(name: 'GIT_BRANCH', description: 'UI Branch Name', defaultValue: "develop"),
-			string(name: 'DEV_BOX_IP', description: '', defaultValue: "10.0.31.138"),
-			string(name: 'QA_BOX_IP', description: '', defaultValue: "10.0.31.242"),
+			string(name: 'DEV_BOX_IP', description: 'comma separated servers IP', defaultValue: "10.0.31.138"),
+			string(name: 'QA_BOX_IP', description: 'comma separated servers IP', defaultValue: "10.0.31.242"),
 			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Save image to a tar archive'),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not')
 		]),
@@ -40,8 +40,8 @@ node {
 		def applicationDir = 'demandplannerui'
 		releasedVersion = "${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}"
 		def branchName = "${GIT_BRANCH}"
-		def devServerIP = "${DEV_BOX_IP}"
-		qaServerIP = "${QA_BOX_IP}"
+		def devServerIPString = "${DEV_BOX_IP}"
+		qaServerIPString = "${QA_BOX_IP}"
 		// =========== USER DEFINED VARS ===========
 
 		echo "workspacePath: ${workspacePath}"
@@ -65,46 +65,21 @@ node {
 			utils.uiDockerBuild(applicationDir, artifactName, releasedVersion)
 		}
 
-		//saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils)
-
-		//saveImage  - BEGIN
-		if (GIT_IMAGE_PUSH.toBoolean()) {
-			echo "Save Image to Tar Archive and pushing Tar to Git Repo"
-			utils.saveImageToFS(applicationDir, distroDirPath, artifactName, releasedVersion)
-			utils.saveImageToRepo(applicationDir, distroDirPath, artifactName, releasedVersion)
-		} else {
-			echo "Save Image to Tar Archive and Copy image to ${distroDirPath}"
-			utils.saveImageToFS(applicationDir, distroDirPath, artifactName, releasedVersion)
-		}
-		//saveImage  - END
-
-
-
-
+		saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils)
 		tagBranch(applicationDir, uiRepoUrl, releasedVersion, GIT_TAG, utils)
 
 		// TODO: remove the tar files from server /home directory :
 		// TODO: try to execute Shell Script on Server : https://medium.com/devopslinks/a-hacky-hackers-guide-to-hacking-together-jenkins-scripted-pipelines-part-3-aca73bd33eaa
-		if (devServerIP != null && devServerIP != "") {
-			dockerClean(artifactName, devServerIP, utils)
-			loadImage(distroDirPath, artifactName, releasedVersion, devServerIP, utils)
-			stage('deploy to DEV'){
-				//utils.stopContainer(artifactName, devServerIP)
-
-				// stopContainer - BEING
-				try{
-					sh """
-						ssh centos@${serverIP} 'sudo su && docker ps --no-trunc -aqf \'name=${artifactName}\' | xargs -I {} docker stop {} &&
-						docker ps --no-trunc -aqf \'name=${artifactName}\' | xargs -I {} docker rm {}' 
-						"""
-				} catch(error) {
-					echo "${error}"
+		if (devServerIPString != null && devServerIPString != "") {
+			for (String devServerIP : devServerIPString.split(",")) {
+				dockerClean(artifactName, devServerIP, utils)
+				loadImage(distroDirPath, artifactName, releasedVersion, devServerIP, utils)
+				stage('deploy to DEV'){
+					utils.stopContainer(artifactName, devServerIP)
+					// TODO: update the environment field "dev". CURRENTLY PASSING EMPTY
+					deployImage(artifactName, releasedVersion, "", devServerIP, utils)
 				}
-				// stopContainer - END	
-
-				// TODO: update the environment field "dev". CURRENTLY PASSING EMPTY
-				deployImage(artifactName, releasedVersion, "", devServerIP, utils)
-			}
+			}	
 		} else {
 			echo "Please provide dev server IP"
 			throw error
@@ -133,27 +108,17 @@ node {
 		echo "workspacePath in SECOND NODE: ${workspacePath}"
 		echo "artifactName: ${artifactName}"
 		echo "releasedVersion: ${releasedVersion}"
-		echo "qaServerIP: ${qaServerIP}"
+		echo "qaServerIPString: ${qaServerIPString}"
 		echo "distroDirPath: ${distroDirPath}"
 		stage('deploy to QA') {
-			if (qaServerIP != null && qaServerIP != "") {
-				dockerClean(artifactName, qaServerIP, utils)
-				loadImage(distroDirPath, artifactName, releasedVersion, qaServerIP, utils)
-				//utils.stopContainer(artifactName, qaServerIP)
-
-				// stopContainer - BEING
-				try{
-					sh """
-						ssh centos@${serverIP} 'sudo su && docker ps --no-trunc -aqf \'name=${artifactName}\' | xargs -I {} docker stop {} &&
-						docker ps --no-trunc -aqf \'name=${artifactName}\' | xargs -I {} docker rm {}' 
-						"""
-				} catch(error) {
-					echo "${error}"
+			if (qaServerIPString != null && qaServerIPString != "") {
+				for (String qaServerIP : qaServerIPString.split(",")) {
+					dockerClean(artifactName, qaServerIP, utils)
+					loadImage(distroDirPath, artifactName, releasedVersion, qaServerIP, utils)
+					utils.stopContainer(artifactName, qaServerIP)
+					// TODO: update the environment field "qa". CURRENTLY PASSING EMPTY
+					deployImage(artifactName, releasedVersion, "", qaServerIP, utils)
 				}
-				// stopContainer - END	
-
-				// TODO: update the environment field "qa". CURRENTLY PASSING EMPTY
-				deployImage(artifactName, releasedVersion, "", qaServerIP, utils)
 			}
 		}
 	} catch (error) {
