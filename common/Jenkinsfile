@@ -1,43 +1,34 @@
 #!/usr/bin/env groovy
 @Library('JenkinsSharedLibrary') _
 
-//node("jenkins-slave")
 node {
 	properties([
 		[$class: 'BuildDiscarderProperty', strategy:
-			[$class: 'LogRotator', numToKeepStr: '3']],
+			[$class: 'LogRotator', numToKeepStr: '10']],
 		disableConcurrentBuilds(),
 		parameters([
 			string(name: 'GIT_BRANCH', description: ' Branch Name', defaultValue: "feature/dev"),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, 	description: 'Tagging required or not')
-		]),
-		pipelineTriggers([
-			//pollSCM('H/15 * * * *'),
-			//pollSCM('* * * * *'),
-			//cron('@daily')
-			// Trigger build @12 and 4 PM on Week Days
-			//cron('0 12, 16 * * 1-5')
 		])
 	])
 
 	Utils utils = new Utils()
 	try {
 		// =========== USER DEFINED VARS ===========
-		def workspacePath = pwd()
 		def mvnHome = tool name: "Maven_V3"
 		env.PATH = "${mvnHome}/bin:${env.PATH}"
+
+		def workspacePath = pwd()		
 		def commonRepoUrl = "ssh://git@innersource.accenture.com/appq/common.git"
 		def applicationDir = "common"
-		def branchName = "${GIT_BRANCH}"
+		
 		// =========== USER DEFINED VARS ===========
 
-		checkout(applicationDir, commonRepoUrl, branchName)
+		checkout(applicationDir, commonRepoUrl, GIT_BRANCH, utils)
 		build(applicationDir)
 		sonarScanner(applicationDir)
 		allCodeQualityTests(utils)
-		def taggedVersion = utils.getReleasedVersion(applicationDir) + ".${BUILD_NUMBER}"
-		echo "taggedVersion: ${taggedVersion}"
-		tagBranch(applicationDir, commonRepoUrl, taggedVersion,GIT_TAG, utils)
+		tagBranch(applicationDir, commonRepoUrl, GIT_TAG, utils)
 
 	}catch (error) {
 		println error
@@ -50,17 +41,8 @@ node {
 	}
 }
 
-
-def checkout(applicationDir, commonRepoUrl, branchName){
-	stage('Git Checkout') {
-		deleteDir()
-		echo "Checkout in progress..."
-		dir(applicationDir) {
-			git branch: '${GIT_BRANCH}',
-			credentialsId: 'git-repo-ssh-access',
-			url: "${commonRepoUrl}"
-		}
-	}
+def checkout(applicationDir, commonRepoUrl, branchName, utils) {
+	stage('Git Checkout') { utils.commonAppCheckout(applicationDir, commonRepoUrl, branchName) }
 }
 
 def build(applicationDir){
@@ -83,9 +65,13 @@ def allCodeQualityTests(utils) {
 	stage("SonarQube Quality Gate") { utils.processQualityGate() }
 }
 
-def tagBranch(applicationDir, commonRepoUrl, taggedVersion,GIT_TAG, utils) {
+def tagBranch(applicationDir, commonRepoUrl, GIT_TAG, utils) {
 	if (GIT_TAG.toBoolean()) {
 		stage('Tag Branch') {
+			//Fetching Released Version from POM.xml and appending BUILD_NUMBER
+			def taggedVersion = utils.getReleasedVersion(applicationDir) + ".${BUILD_NUMBER}"
+			echo "taggedVersion: ${taggedVersion}"
+
 			utils.tagBranch(applicationDir, commonRepoUrl, taggedVersion)
 		}
 	}
