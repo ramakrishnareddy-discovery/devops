@@ -4,7 +4,7 @@
 node {
 	properties([
 		[$class: 'BuildDiscarderProperty', strategy:
-			[$class: 'LogRotator', numToKeepStr: '10']],
+			[$class: 'LogRotator', numToKeepStr: '3']],
 		disableConcurrentBuilds(),
 		parameters([
 			string(name: 'GIT_BRANCH', description: ' Branch Name', defaultValue: "feature/dev"),

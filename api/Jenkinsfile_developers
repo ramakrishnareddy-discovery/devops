@@ -8,12 +8,12 @@ def artifactName, releasedVersion , qaServerIPString, distroDirPath
 // TODO: MAJOR_VERSION AND MINOR_VERSION PENDING. Refer: http://blog.soebes.de/blog/2017/04/02/maven-pom-files-without-a-version-in-it/
 node {
 	def projectProperties = [
-		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '10']],
+		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '3']],
 		disableConcurrentBuilds(),
 		parameters([
 			string(name: 'GIT_BRANCH', description: 'API Branch Name', defaultValue: "feature/dev"),
-			string(name: 'DEV_BOX_IP', description: '', defaultValue: "10.0.31.138"),
-			string(name: 'QA_BOX_IP', description: '', defaultValue: "10.0.31.242"),
+			string(name: 'DEV_BOX_IP', description: 'comma separated servers IP', defaultValue: "10.0.31.138"),
+			string(name: 'QA_BOX_IP', description: 'comma separated servers IP', defaultValue: "10.0.31.242"),
 			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Save image to a tar archive'),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not')
 		]),
@@ -52,14 +52,7 @@ node {
 					).trim()
 		}
 		echo "releasedVersion: ${releasedVersion}"
-
-		// TODO: comma separated IP, put this for stmt around loadimage, another two for each environment: NOT NOW
-		//DEV_ENVIRONMENT_IP, QA_ENVIRONMENT_IP
-		def devBoxes = '0.0.0.0,1.1.1.2'
-		for (String i : devBoxes.split(",")) {
-			println i
-		}
-
+	
 		build(applicationDir)
 		allTests(applicationDir)
 		sonarScanner(applicationDir)
