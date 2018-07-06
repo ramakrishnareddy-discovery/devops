@@ -89,7 +89,19 @@ node {
 			dockerClean(artifactName, devServerIP, utils)
 			loadImage(distroDirPath, artifactName, releasedVersion, devServerIP, utils)
 			stage('deploy to DEV'){
-				utils.stopContainer(artifactName, devServerIP)
+				//utils.stopContainer(artifactName, devServerIP)
+
+				// stopContainer - BEING
+				try{
+					sh """
+						ssh centos@${serverIP} 'sudo su && docker ps --no-trunc -aqf \'name=${artifactName}\' | xargs -I {} docker stop {} &&
+						docker ps --no-trunc -aqf \'name=${artifactName}\' | xargs -I {} docker rm {}' 
+						"""
+				} catch(error) {
+					echo "${error}"
+				}
+				// stopContainer - END	
+
 				// TODO: update the environment field "dev". CURRENTLY PASSING EMPTY
 				deployImage(artifactName, releasedVersion, "", devServerIP, utils)
 			}
@@ -127,7 +139,19 @@ node {
 			if (qaServerIP != null && qaServerIP != "") {
 				dockerClean(artifactName, qaServerIP, utils)
 				loadImage(distroDirPath, artifactName, releasedVersion, qaServerIP, utils)
-				utils.stopContainer(artifactName, qaServerIP)
+				//utils.stopContainer(artifactName, qaServerIP)
+
+				// stopContainer - BEING
+				try{
+					sh """
+						ssh centos@${serverIP} 'sudo su && docker ps --no-trunc -aqf \'name=${artifactName}\' | xargs -I {} docker stop {} &&
+						docker ps --no-trunc -aqf \'name=${artifactName}\' | xargs -I {} docker rm {}' 
+						"""
+				} catch(error) {
+					echo "${error}"
+				}
+				// stopContainer - END	
+
 				// TODO: update the environment field "qa". CURRENTLY PASSING EMPTY
 				deployImage(artifactName, releasedVersion, "", qaServerIP, utils)
 			}
