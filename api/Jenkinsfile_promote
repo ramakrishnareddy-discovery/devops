@@ -31,7 +31,7 @@ node {
 		distroDirPath =  "/product/jenkins/distro_api"
 		def destinationIP = "${PROD_BOX_IP}"
 		def releasedVersion = "${dpVersionNumber}"
-		def artifactName = "${ARITFACT_NAME}"
+		def artifactName = "${APPLICATION_VERSION}"
 		// =========== USER DEFINED VARS ===========
 
 		stage('Git Checkout') {
