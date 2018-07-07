@@ -8,16 +8,6 @@ def dpVersionNumber = "cat /product/jenkins/distro_api/version.txt".execute().te
 
 echo "${dpVersionNumber}"
 
-String STUB_GIT_VERSION_SCRIPT = '''
-def proc1 = ['/bin/bash', '-c', "/usr/bin/git ls-remote --heads ssh://git@innersource.accenture.com/appq/distro_api.git"].execute()
-def proc2 = ['/bin/bash', '-c', "awk '{print \\$2}'"].execute()
-def proc3 = ['/bin/bash', '-c', "sed s%^refs/heads/%%"].execute()
-def proc4 = ['/bin/bash', '-c', "sort"].execute()
-
-def all = proc1 | proc2 | proc3 | proc4
-return all.text.readLines()
-'''
-
 node {
 	def projectProperties = [
 		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '5']],
@@ -25,16 +15,7 @@ node {
 		parameters([
 			string(name: 'PROD_BOX_IP', description: '', defaultValue: "10.0.31.242"),
 			string(name: 'TEST', description: '', defaultValue: "~@ignore"),
-			choice(name: 'APPLICATION_VERSION', choices:"${dpVersionNumber}", description: "Application Version"),
-			    [$class           : 'ChoiceParameterDefinition',
-                 dataProvider     : [$class : 'GroovyDataProvider',
-                                     sandbox: false,
-                                     script : STUB_GIT_VERSION_SCRIPT],
-                 defaultValue     : 'master',
-                 description      : 'Stub Git branch',
-                 displayExpression: '',
-                 name             : 'STUB_GIT_VERSION',
-                 valueExpression  : '']
+			choice(name: 'APPLICATION_VERSION', choices:"${dpVersionNumber}", description: "Application Version")
 		])
 	]
 
