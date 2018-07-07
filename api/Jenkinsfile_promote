@@ -3,10 +3,24 @@
 
 String FALLBACK_SCRIPT = "return ['Error']"
 
-def multiline = "cat /product/jenkins/distro_api/version.txt".execute().text
-def list = multiline.readLines()
+def dpVersionNumber = "cat /product/jenkins/distro_api/version.txt".execute().text
+//def list = multiline.readLines()
 
-echo "${list}"
+echo "${dpVersionNumber}"
+
+String STUB_GIT_VERSION_SCRIPT = '''
+def proc1 = ['/bin/bash', '-c', "/usr/bin/git ls-remote --heads ssh://git@innersource.accenture.com/appq/distro_api.git"].execute()
+def proc2 = ['/bin/bash', '-c', "awk '{print \\$2}'"].execute()
+def proc3 = ['/bin/bash', '-c', "sed s%^refs/heads/%%"].execute()
+def proc4 = ['/bin/bash', '-c', "sort"].execute()
+
+def all = proc1 | proc2 | proc3 | proc4
+echo "all.text.readLines()"
+echo "$all.text.readLines()}"
+//return all.text.readLines()
+'''
+
+
 
 node {
 	def projectProperties = [
@@ -14,8 +28,7 @@ node {
 		disableConcurrentBuilds(),
 		parameters([
 			string(name: 'PROD_BOX_IP', description: '', defaultValue: "10.0.31.242"),
-			string(name: 'IMAGE_NAME', description: '', defaultValue: "qualcomm-ms-demandplanner"),
-			string(name: 'IMAGE_TAG', description: 'TAG of latest image', defaultValue: "1.0.0-SNAPSHOT")
+			choice(name: 'ARITFACT_NAME', choices:"${dpVersionNumber}", description: "Application Version")
 		])
 	]
 
@@ -29,9 +42,9 @@ node {
 		echo "workspacePath: ${workspacePath}"
 		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_api.git'
 		distroDirPath =  "/product/jenkins/distro_api"
-		def artifactName = "${IMAGE_NAME}"
-		def destinationIP = "${DESTINATION_IP}"
+		def destinationIP = "${PROD_BOX_IP}"
 		def releasedVersion = "${IMAGE_TAG}"
+		def artifactName = "${ARITFACT_NAME}"
 		// =========== USER DEFINED VARS ===========
 
 		stage('Git Checkout') {
