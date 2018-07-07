@@ -16,15 +16,7 @@ node {
 			string(name: 'PROD_BOX_IP', description: '', defaultValue: "10.0.31.242"),
 			string(name: 'IMAGE_NAME', description: '', defaultValue: "qualcomm-ms-demandplanner"),
 			string(name: 'IMAGE_TAG', description: 'TAG of latest image', defaultValue: "1.0.0-SNAPSHOT"),
-			activeChoiceParam('States') {
-            description('Select a state option')
-            filterable()
-            choiceType('SINGLE_SELECT')
-            groovyScript {
-                script('["Sao Paulo", "Rio de Janeiro", "Parana:selected", "Acre"]')
-                fallbackScript('return ["ERROR"]')
-            }
-        }
+			choice(name: 'Nodes', choices:"${list}", description: "")
 		])
 	]
 
