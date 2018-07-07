@@ -15,16 +15,14 @@ def proc3 = ['/bin/bash', '-c', "sed s%^refs/heads/%%"].execute()
 def proc4 = ['/bin/bash', '-c', "sort"].execute()
 
 def all = proc1 | proc2 | proc3 | proc4
-echo "all.text.readLines()"
-echo "$all.text.readLines()}"
-//return all.text.readLines()
+return all.text.readLines()
 '''
-
+echo "${STUB_GIT_VERSION_SCRIPT}"
 
 
 node {
 	def projectProperties = [
-		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '10']],
+		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '5']],
 		disableConcurrentBuilds(),
 		parameters([
 			string(name: 'PROD_BOX_IP', description: '', defaultValue: "10.0.31.242"),
@@ -43,7 +41,7 @@ node {
 		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_api.git'
 		distroDirPath =  "/product/jenkins/distro_api"
 		def destinationIP = "${PROD_BOX_IP}"
-		def releasedVersion = "${IMAGE_TAG}"
+		def releasedVersion = "${dpVersionNumber}"
 		def artifactName = "${ARITFACT_NAME}"
 		// =========== USER DEFINED VARS ===========
 
