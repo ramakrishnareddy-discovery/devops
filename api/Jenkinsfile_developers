@@ -92,12 +92,6 @@ node {
 
 
 stage('Deploy Approval') {
-	def userInput = input(
-			id: 'deployToQA', message: 'Do you wish to promote build to QA?', ok: 'ok', parameters: [string(defaultValue: 'Approved', description: '', name: 'Deploy Approval?')])
-	echo ("Deploy Approval: " + userInput)
-}
-
-stage('Temp Test') {
         def deployOptions = 'no\nyes'
         def userInput = input(
           id: 'userInput', message: 'Are you prepared to deploy?', parameters: [
