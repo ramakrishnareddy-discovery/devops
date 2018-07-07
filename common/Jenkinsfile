@@ -7,7 +7,7 @@ node {
 			[$class: 'LogRotator', numToKeepStr: '3']],
 		disableConcurrentBuilds(),
 		parameters([
-			string(name: 'GIT_BRANCH', description: ' Branch Name', defaultValue: "feature/dev"),
+			string(name: 'GIT_BRANCH', description: ' Branch Name', defaultValue: "feature/dev", trim: true),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, 	description: 'Tagging required or not')
 		]),
 		pipelineTriggers([ cron('H 6,11 * * *') ])

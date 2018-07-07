@@ -13,8 +13,8 @@ node {
 		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '5']],
 		disableConcurrentBuilds(),
 		parameters([
-			string(name: 'PROD_BOX_IP', description: '', defaultValue: "10.0.31.242"),
-			string(name: 'TEST', description: '', defaultValue: "~@ignore"),
+			string(name: 'PROD_BOX_IP', description: '', defaultValue: "10.0.31.242", trim: true),
+			string(name: 'TEST', description: '', defaultValue: "~@ignore", trim: true),
 			choice(name: 'APPLICATION_VERSION', choices:"${dpVersionNumber}", description: "Application Version")
 		])
 	]
@@ -30,10 +30,14 @@ node {
 		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_api.git'
 		distroDirPath =  "/product/jenkins/distro_api"
 		def destinationIP = "${PROD_BOX_IP}"
-		def releasedVersion = "${dpVersionNumber}"
+		def releasedVersion = "${APPLICATION_VERSION}"
+		// TODO: discuss with suresh about versioning like application name better do not add "-": demandplanner-1.3.SNAPSHOT OR demandplanner-1.3.89 
 		def artifactName = "${APPLICATION_VERSION}"
 		// =========== USER DEFINED VARS ===========
 
+		currentBuild.displayName = "The name."
+        currentBuild.description = "The best description."
+		
 		stage('Git Checkout') {
 			utils.distroCheckout(distroDirPath, distroRepoUrl)
 		}
