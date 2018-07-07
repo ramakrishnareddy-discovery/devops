@@ -1,6 +1,13 @@
 #!/usr/bin/env groovy
 @Library('JenkinsSharedLibrary') _
 
+String FALLBACK_SCRIPT = "return ['Error']"
+
+def multiline = "cat /product/jenkins/distro_api/version.txt".execute().text
+def list = multiline.readLines()
+
+echo "${list}"
+
 node {
 	def projectProperties = [
 		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '10']],
@@ -21,7 +28,7 @@ node {
 		def workspacePath = pwd()
 		echo "workspacePath: ${workspacePath}"
 		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_api.git'
-		def distroDirPath = "/tmp/jenkins/distro_api"
+		distroDirPath =  "/product/jenkins/distro_api"
 		def artifactName = "${IMAGE_NAME}"
 		def destinationIP = "${DESTINATION_IP}"
 		def releasedVersion = "${IMAGE_TAG}"
@@ -47,5 +54,3 @@ node {
 	}
 	
 }
-
-
