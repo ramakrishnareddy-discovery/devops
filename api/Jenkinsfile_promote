@@ -23,9 +23,10 @@ node {
 		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '5']],
 		disableConcurrentBuilds(),
 		parameters([
-			string(name: 'PROD_BOX_IP', description: '~@ignore', defaultValue: "10.0.31.242"),
+			string(name: 'PROD_BOX_IP', description: '', defaultValue: "10.0.31.242"),
+			string(name: 'TEST', description: '', defaultValue: "~@ignore"),
 			choice(name: 'APPLICATION_VERSION', choices:"${dpVersionNumber}", description: "Application Version"),
-			    [$class           : 'DropdownAutocompleteParameterDefinition',
+			    [$class           : 'ChoiceParameterDefinition',
                  dataProvider     : [$class : 'GroovyDataProvider',
                                      sandbox: false,
                                      script : STUB_GIT_VERSION_SCRIPT],
