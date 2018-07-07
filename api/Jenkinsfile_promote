@@ -34,8 +34,6 @@ node {
 		def artifactName = "${ARITFACT_NAME}"
 		// =========== USER DEFINED VARS ===========
 
-		echo "${STUB_GIT_VERSION_SCRIPT}"
-
 		stage('Git Checkout') {
 			utils.distroCheckout(distroDirPath, distroRepoUrl)
 		}
