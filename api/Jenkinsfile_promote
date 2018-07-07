@@ -35,8 +35,7 @@ node {
 		def artifactName = "${APPLICATION_VERSION}"
 		// =========== USER DEFINED VARS ===========
 
-		currentBuild.displayName = "The name."
-        currentBuild.description = "The best description."
+		currentBuild.displayName = "${artifactName}.${releasedVersion}"
 		
 		stage('Git Checkout') {
 			utils.distroCheckout(distroDirPath, distroRepoUrl)

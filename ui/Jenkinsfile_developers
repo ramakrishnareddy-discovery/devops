@@ -44,6 +44,7 @@ node {
 		qaServerIPString = "${QA_BOX_IP}"
 		// =========== USER DEFINED VARS ===========
 
+		currentBuild.displayName = "${artifactName}.${releasedVersion}"
 		echo "workspacePath: ${workspacePath}"
 
 		stage('Git Checkout') {

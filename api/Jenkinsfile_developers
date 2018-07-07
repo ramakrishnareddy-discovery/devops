@@ -41,6 +41,8 @@ node {
 		qaServerIPString = "${QA_BOX_IP}"
 		// =========== USER DEFINED VARS ===========
 
+		
+
 		checkout(applicationDir, GIT_BRANCH, apiRepoUrl, distroDirPath, distroRepoUrl, utils)
 		// Since artifactName and releasedVersion fetching from POM.xml, should execute after cloning the repo.
 		artifactName = utils.getArtifact(applicationDir)
@@ -52,7 +54,9 @@ node {
 					).trim()
 		}
 		echo "releasedVersion: ${releasedVersion}"
-	
+
+		currentBuild.displayName = "${artifactName}.${releasedVersion}"
+
 		build(applicationDir)
 		allTests(applicationDir)
 		sonarScanner(applicationDir)
