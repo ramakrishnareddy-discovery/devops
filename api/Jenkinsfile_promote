@@ -31,7 +31,7 @@ node {
 		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_api.git'
 		distroDirPath =  "/product/jenkins/distro_api"
 		def artifactName = "${IMAGE_NAME}"
-		def destinationIP = "${DESTINATION_IP}"
+		def destinationIP = "${PROD_BOX_IP}"
 		def releasedVersion = "${IMAGE_TAG}"
 		// =========== USER DEFINED VARS ===========
 
