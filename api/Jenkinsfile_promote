@@ -17,16 +17,23 @@ def proc4 = ['/bin/bash', '-c', "sort"].execute()
 def all = proc1 | proc2 | proc3 | proc4
 return all.text.readLines()
 '''
-echo "${STUB_GIT_VERSION_SCRIPT}"
-
 
 node {
 	def projectProperties = [
 		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '5']],
 		disableConcurrentBuilds(),
 		parameters([
-			string(name: 'PROD_BOX_IP', description: '', defaultValue: "10.0.31.242"),
-			choice(name: 'ARITFACT_NAME', choices:"${dpVersionNumber}", description: "Application Version")
+			string(name: 'PROD_BOX_IP', description: '~@ignore', defaultValue: "10.0.31.242"),
+			choice(name: 'APPLICATION_VERSION', choices:"${dpVersionNumber}", description: "Application Version"),
+			    [$class           : 'DropdownAutocompleteParameterDefinition',
+                 dataProvider     : [$class : 'GroovyDataProvider',
+                                     sandbox: false,
+                                     script : STUB_GIT_VERSION_SCRIPT],
+                 defaultValue     : 'master',
+                 description      : 'Stub Git branch',
+                 displayExpression: '',
+                 name             : 'STUB_GIT_VERSION',
+                 valueExpression  : '']
 		])
 	]
 
@@ -45,6 +52,8 @@ node {
 		def artifactName = "${ARITFACT_NAME}"
 		// =========== USER DEFINED VARS ===========
 
+		echo "${STUB_GIT_VERSION_SCRIPT}"
+
 		stage('Git Checkout') {
 			utils.distroCheckout(distroDirPath, distroRepoUrl)
 		}
@@ -52,7 +61,8 @@ node {
 		stage('Docker Clean'){ utils.removeDanglingImages(artifactName, destinationIP) }
 
 		stage('deploy'){
-			utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP)
+			// TODO: PROP_ENV has to identify for production. currently passing empty
+			utils.promoteAPIToEnv(artifactName, releasedVersion, "qa", destinationIP)
 		}
 	}catch (error) {
 		println error
