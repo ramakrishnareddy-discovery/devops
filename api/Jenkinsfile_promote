@@ -6,7 +6,7 @@ String FALLBACK_SCRIPT = "return ['Error']"
 def dpVersionNumber = "cat /product/jenkins/distro_api/version.txt".execute().text
 //def list = multiline.readLines()
 
-echo "${list}"
+echo "${dpVersionNumber}"
 
 node {
 	def projectProperties = [
