@@ -46,7 +46,7 @@ node {
 		prodReleaseCandidate = "${PROD_RELEASE_CANDIDATE}"
 		// =========== USER DEFINED VARS ===========
 
-		
+
 
 		checkout(applicationDir, GIT_BRANCH, apiRepoUrl, distroDirPath, distroRepoUrl, utils)
 		// Since artifactName and releasedVersion fetching from POM.xml, should execute after cloning the repo.
@@ -98,27 +98,26 @@ node {
 		//mail subject: "Build finished unsuccessfully", body: "It appears that ${env.BUILD_URL}", to: "r.satti@accenture.com", from: "noreply_jenkins@qcom.accenture.com"
 	}
 }
+//--------------------------------------------------------- DEV RELEASE CODE END ---------------------------------------------------------
+
+if (qaReleaseCandidate.toBoolean()) {
+	echo "${releasedVersion} got primary approval to deploy to QA"
+} else {
+	echo "As per User Input, Not Proceeding with QA Deployment."
+	return
+}
 
 //--------------------------------------------------------- QA RELEASE CODE BEGIN ---------------------------------------------------------
 stage('Deploy Approval -QA') {
-		if (qaReleaseCandidate.toBoolean()) {
-			echo "${releasedVersion} is deploying to QA"
-		} else {
-			echo "As per User Input, Not Proceeding with QA Deployment."
-			currentBuild.result = 'ABORTED'
-		}
-
-        def deployOptions = 'no\nyes'
-        userApprovalQAInput = input(
-          id: 'userInput', message: 'Are you prepared to deploy?', parameters: [
-          [$class: 'ChoiceParameterDefinition', choices: deployOptions, description: 'Approve/Disallow deployment', name: 'deploy-check']
-          ]
-        )
-        echo "userApprovalQAInput: ${userApprovalQAInput}"
+	def deployOptions = 'no\nyes'
+	userApprovalQAInput = input(
+			id: 'userInput', message: 'Are you prepared to deploy?', parameters: [[$class: 'ChoiceParameterDefinition', choices: deployOptions, description: 'Approve/Disallow deployment', name: 'deploy-check']])
+	echo "userApprovalQAInput: ${userApprovalQAInput}"
 }
 
 node {
 	if (qaReleaseCandidate.toBoolean() && userApprovalQAInput == 'yes') {
+
 		Utils utils = new Utils()
 		try {
 			def workspacePath = pwd()
@@ -134,7 +133,11 @@ node {
 						loadImage(distroDirPath, artifactName, releasedVersion, qaServerIP, utils)
 						utils.stopContainer(artifactName, qaServerIP)
 						deployImage(artifactName, releasedVersion, "qa", qaServerIP, utils)
-					}	
+					}
+				}
+				else {
+					echo "Please provide QA server IP"
+					throw error
 				}
 			}
 		} catch (error) {
@@ -147,50 +150,49 @@ node {
 			utils.sendNotification(currentBuild.result)
 		}
 	} else if (userApprovalQAInput == 'no'){
-		echo "${user} didn't approve for QA Release"
-		currentBuild.result = 'ABORTED'
+		echo "${user} didn't provide secondary approval for QA Release."
+		return;
 	}
-	
+
 }
 //--------------------------------------------------------- QA RELEASE CODE END ---------------------------------------------------------
 
 
+if (prodReleaseCandidate.toBoolean()) {
+	echo "${releasedVersion} got primary approval to deploy to PROD"
+
+} else {
+	echo "As per User Input, Not Proceeding with PROD Deployment."
+	return
+}
+
 //--------------------------------------------------------- PROD RELEASE CODE BEGIN ---------------------------------------------------------
 stage('Deploy Approval -PROD') {
-		if (prodReleaseCandidate.toBoolean()) {
-			echo "${releasedVersion} is deploying to PROD"
-		} else {
-			echo "As per User Input, Not Proceeding with PROD Deployment."
-			currentBuild.result = 'ABORTED'
-		}
-
-        def deployOptions = 'no\nyes'
-        userApprovalProdInput = input(
-          id: 'userInput', message: 'Are you prepared to deploy?', parameters: [
-          [$class: 'ChoiceParameterDefinition', choices: deployOptions, description: 'Approve/Disallow deployment', name: 'deploy-check']
-          ]
-        )
-        echo "userApprovalProdInput: ${userApprovalProdInput}"
+	def deployOptions = 'no\nyes'
+	userApprovalProdInput = input(
+			id: 'userInput', message: 'Are you prepared to deploy?', parameters: [[$class: 'ChoiceParameterDefinition', choices: deployOptions, description: 'Approve/Disallow deployment', name: 'deploy-check']])
+	echo "userApprovalProdInput: ${userApprovalProdInput}"
 }
 
 node {
 	Utils utils = new Utils()
 	stage('deploy to PROD') {
-		if (userApprovalProdInput == 'yes') {
-			
-				echo "Proceed with Prod Deployment"
-			
-		} else if (userApprovalProdInput == 'no')
-		{
-			echo "${user} didn't approve for Productiton Release"
-			currentBuild.result = 'ABORTED'
+		if (prodReleaseCandidate.toBoolean() && userApprovalProdInput == 'yes') {
+
+			echo "Proceed with Prod Deployment"
+
+		} else if (userApprovalProdInput == 'no'){
+			echo "${user} didn't provide secondary approval for QA Release."
+			return;
 		}
 	}
-
 }
 //--------------------------------------------------------- PROD RELEASE CODE END ---------------------------------------------------------
 
 
+
+
+//--------------------------------------------------------- UTILITY METHODS ---------------------------------------------------------
 def checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl, utils) {
 	stage('Git Checkout') {
 		utils.sourceCodeCheckout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl)
