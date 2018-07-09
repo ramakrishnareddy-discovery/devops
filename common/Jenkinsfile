@@ -25,6 +25,9 @@ node {
 		
 		// =========== USER DEFINED VARS ===========
 
+		// TODO: add build version
+		//currentBuild.displayName = "${artifactName}.${releasedVersion}"
+
 		checkout(applicationDir, commonRepoUrl, GIT_BRANCH, utils)
 		build(applicationDir)
 		sonarScanner(applicationDir)

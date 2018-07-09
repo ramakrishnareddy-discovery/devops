@@ -1,0 +1,296 @@
+#!/usr/bin/env groovy
+@Library('JenkinsSharedLibrary') _
+
+// =========== GLOBAL VARS ===========
+def artifactName, releasedVersion , qaServerIPString, distroDirPath, releaseCandidate, userApprovalProdInput
+// =========== GLOBAL VARS ===========
+
+// TODO: MAJOR_VERSION AND MINOR_VERSION PENDING. Refer: http://blog.soebes.de/blog/2017/04/02/maven-pom-files-without-a-version-in-it/
+node {
+	def projectProperties = [
+		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '3']],
+		disableConcurrentBuilds(),
+		parameters([
+			string(name: 'GIT_BRANCH', description: 'API Branch Name', defaultValue: "feature/dev",trim: true),
+			string(name: 'DEV_BOX_IP', description: 'comma separated servers IP', defaultValue: "10.0.31.138", trim: true),
+			string(name: 'QA_BOX_IP', description: 'comma separated servers IP', defaultValue: "10.0.31.242", trim: true),
+			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Save image to a tar archive'),
+			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not'),
+			booleanParam(name: 'RELEASE_CANDIDATE', defaultValue: false, description: 'Promote to Prod or Not'),
+			string(name: 'PROD_BOX_IP', description: 'comma separated servers IP', defaultValue: "~@ignore", trim: true)
+		]),
+	]
+	projectProperties.add(pipelineTriggers([upstream(threshold: hudson.model.Result.SUCCESS,upstreamProjects: "common")]))
+	properties(projectProperties)
+
+	Utils utils = new Utils()
+	try {
+		// =========== USER DEFINED VARS ===========
+		def workspacePath = pwd()
+		echo "workspacePath: ${workspacePath}"
+
+		def mvnHome = tool name: "Maven_V3"
+		env.PATH = "${mvnHome}/bin:${env.PATH}"
+
+		def apiRepoUrl = 'ssh://git@innersource.accenture.com/appq/demandplannerapi.git'
+		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_api.git'
+
+		// "/product/jenkins" folder should exist and have jenkins user permissions.
+		distroDirPath =  "/product/jenkins/distro_api" //"/tmp/jenkins/distro_api" //"/product/jenkins/lib/distro_api"
+
+		def applicationDir = "demandplannerapi"
+		def devServerIPString = "${DEV_BOX_IP}"
+		qaServerIPString = "${QA_BOX_IP}"
+		releaseCandidate = "${RELEASE_CANDIDATE}"
+		// =========== USER DEFINED VARS ===========
+
+		
+
+		checkout(applicationDir, GIT_BRANCH, apiRepoUrl, distroDirPath, distroRepoUrl, utils)
+		// Since artifactName and releasedVersion fetching from POM.xml, should execute after cloning the repo.
+		artifactName = utils.getArtifact(applicationDir)
+
+		dir(applicationDir) {
+			releasedVersion = sh (
+					script: """ mvn help:evaluate -Dexpression=project.version -Dv=${BUILD_NUMBER} | grep -e '^[^\\[]'  """,
+					returnStdout: true
+					).trim()
+		}
+		echo "releasedVersion: ${releasedVersion}"
+
+		currentBuild.displayName = "${artifactName}.${releasedVersion}"
+
+		build(applicationDir)
+		allTests(applicationDir)
+		sonarScanner(applicationDir)
+		allCodeQualityTests(utils)
+		utils.removeImages(artifactName)  // To clean images created on Jenkins BOX
+		dockerBuild()
+		saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils)
+		tagBranch(applicationDir, apiRepoUrl, releasedVersion, GIT_TAG, utils)
+
+		// TODO: remove the tar files from server /home directory :
+		// TODO: try to execute Shell Script on Server : https://medium.com/devopslinks/a-hacky-hackers-guide-to-hacking-together-jenkins-scripted-pipelines-part-3-aca73bd33eaa
+		if (devServerIPString != null && devServerIPString != "") {
+			for (String devServerIP : devServerIPString.split(",")) {
+				dockerClean(artifactName, devServerIP, utils)
+				loadImage(distroDirPath, artifactName, releasedVersion, devServerIP, utils)
+				stage('deploy to DEV'){
+					utils.stopContainer(artifactName, devServerIP)
+					deployImage(artifactName, releasedVersion, "dev", devServerIP, utils)
+				}
+			}
+		}
+		else {
+			echo "Please provide dev server IP"
+			throw error
+		}
+	}catch (error) {
+		println error
+		// If there was an exception thrown, the build failed
+		currentBuild.result = 'FAILURE'
+		throw error
+	} finally {
+		// Success or failure, always send notifications
+		utils.sendNotification(currentBuild.result)
+		//mail subject: "Build finished unsuccessfully", body: "It appears that ${env.BUILD_URL}", to: "r.satti@accenture.com", from: "noreply_jenkins@qcom.accenture.com"
+	}
+}
+
+
+stage('Deploy Approval') {
+        def deployOptions = 'no\nyes'
+        def userInput = input(
+          id: 'userInput', message: 'Are you prepared to deploy?', parameters: [
+          [$class: 'ChoiceParameterDefinition', choices: deployOptions, description: 'Approve/Disallow deployment', name: 'deploy-check']
+          ]
+        )
+        echo "you selected: ${userInput}"
+}
+
+node {
+	Utils utils = new Utils()
+	try {
+		def workspacePath = pwd()
+		echo "workspacePath in SECOND NODE: ${workspacePath}"
+		echo "artifactName: ${artifactName}"
+		echo "releasedVersion: ${releasedVersion}"
+		echo "qaServerIPString: ${qaServerIPString}"
+		echo "distroDirPath: ${distroDirPath}"
+		stage('deploy to QA') {
+			if (qaServerIPString != null && qaServerIPString != "") {
+				for (String qaServerIP : qaServerIPString.split(",")) {
+					dockerClean(artifactName, qaServerIP, utils)
+					loadImage(distroDirPath, artifactName, releasedVersion, qaServerIP, utils)
+					utils.stopContainer(artifactName, qaServerIP)
+					deployImage(artifactName, releasedVersion, "qa", qaServerIP, utils)
+				}	
+			}
+		}
+	} catch (error) {
+		println error
+		// If there was an exception thrown, the build failed
+		currentBuild.result = 'FAILURE'
+		throw error
+	} finally {
+		// Success or failure, always send notifications
+		utils.sendNotification(currentBuild.result)
+	}
+}
+
+if (releaseCandidate.toBoolean()) {
+	echo "${releasedVersion} is Release Candidate"
+} else {
+	currentBuild.result = 'ABORT'
+}
+
+stage('Deploy Approval - PROD') {
+        def deployOptions = 'no\nyes'
+        userApprovalProdInput = input(
+          id: 'userInput', message: 'Are you prepared to deploy?', parameters: [
+          [$class: 'ChoiceParameterDefinition', choices: deployOptions, description: 'Approve/Disallow deployment', name: 'deploy-check']
+          ]
+        )
+        echo "you selected: ${userApprovalProdInput}"
+}
+
+node {
+	Utils utils = new Utils()
+	if (userApprovalProdInput == 'yes') {
+		
+			echo "Proceed with Prod Deployment"
+		
+	} else
+	{
+		echo "User didn't approve for Productiton Release"
+		currentBuild.result = 'ABORT'
+	}
+
+}
+
+
+stage('Deploy Approval') {
+        def deployOptions = 'no\nyes'
+        def userInput = input(
+          id: 'userInput', message: 'Are you prepared to deploy?', parameters: [
+          [$class: 'ChoiceParameterDefinition', choices: deployOptions, description: 'Approve/Disallow deployment', name: 'deploy-check']
+          ]
+        )
+        echo "you selected: ${userInput}"
+}
+
+
+def checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl, utils) {
+	stage('Git Checkout') {
+		utils.sourceCodeCheckout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl)
+	}
+}
+
+def build(applicationDir) {
+	stage ('Maven Build') {
+		dir(applicationDir) { sh "mvn clean install -Dmaven.test.skip=true -Dv=${BUILD_NUMBER}" }
+	}
+}
+
+def allTests(applicationDir) {
+	stage ('Junit Test') { dir(applicationDir) {sh "mvn test -Dv=${BUILD_NUMBER}" }}
+}
+
+def sonarScanner(applicationDir) {
+	stage('SonarQube Analysis') {
+		dir(applicationDir) {
+			withSonarQubeEnv('SonarQube_V7') { // SonarQube taskId is automatically attached to the pipeline context
+				sh "mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.3.0.603:sonar -Dv=${BUILD_NUMBER}" }
+		}
+	}
+}
+
+def allCodeQualityTests(utils) {
+	stage("SonarQube Quality Gate") { utils.processQualityGate() }
+}
+
+
+def dockerBuild() {
+	stage('Docker Build'){
+		dir('demandplannerapi') {
+			echo "Starting Docker Image Creation..."
+			sh "mvn docker:build -Dv=${BUILD_NUMBER}"
+			echo "Docker Image Creation Complted..."
+		}
+	}
+}
+
+def saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils) {
+	stage('Save Image to Tar Archive') {
+		utils.saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH)
+	}
+}
+
+
+def tagBranch(applicationDir, apiRepoUrl, releasedVersion,GIT_TAG, utils) {
+	if (GIT_TAG.toBoolean()) {
+		stage('Tag Branch') {
+			utils.tagBranch(applicationDir, apiRepoUrl, releasedVersion)
+		}
+		sh "docker images"
+	}
+}
+
+def dockerClean(artifactName, serverIP, utils) {
+	//stage('Docker Clean'){
+	utils.removeDanglingImages(artifactName, serverIP)
+	//}
+}
+
+def loadImage(distroDirPath, artifactName, releasedVersion, destinationIP, utils) {
+	//stage('load Image'){
+	utils.loadImage(distroDirPath, artifactName, releasedVersion, destinationIP)
+	//}
+}
+
+def deployImage(artifactName, releasedVersion, PROP_ENV, destinationIP, utils) {
+	utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP)
+}
+
+
+// Assuming jenkins box is Dev BOX and deploying application to local box
+def deployToDev(artifactName, releasedVersion, PROP_ENV, utils) {
+	stage('deploy to DEV'){
+		utils.deployAPIToDev(artifactName, releasedVersion, PROP_ENV)
+	}
+}
+
+
+/*  
+ // This  method add an input step with timeout that continues if timeout is reached using a default value.
+ stage('deploy to QA'){
+ userAborted = false
+ startMillis = System.currentTimeMillis()
+ timeoutMillis = 10000
+ try {
+ timeout(time: timeoutMillis, unit: 'MILLISECONDS') {
+ input 'Do you approve?'
+ }
+ } catch (org.jenkinsci.plugins.workflow.steps.FlowInterruptedException e) {
+ cause = e.causes.get(0)
+ echo "Aborted by " + cause.getUser().toString()
+ if (cause.getUser().toString() != 'SYSTEM') {
+ startMillis = System.currentTimeMillis()
+ } else {
+ endMillis = System.currentTimeMillis()
+ if (endMillis - startMillis >= timeoutMillis) {
+ echo "Approval timed out. Continuing with deployment."
+ } else {
+ userAborted = true
+ echo "SYSTEM aborted, but looks like timeout period didn't complete. Aborting."
+ }
+ }
+ }
+ if (userAborted) {
+ currentBuild.result = 'ABORTED'
+ } else {
+ currentBuild.result = 'SUCCESS'
+ utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP)
+ }
+ }
+ */
