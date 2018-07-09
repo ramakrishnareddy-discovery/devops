@@ -78,7 +78,7 @@ node {
 				stage('deploy to DEV'){
 					utils.stopContainer(artifactName, devServerIP)
 					// TODO: update the environment field "dev". CURRENTLY PASSING EMPTY
-					deployImage(artifactName, releasedVersion, "", devServerIP, utils)
+					deployImage(artifactName, releasedVersion, "dev", devServerIP, utils)
 				}
 			}	
 		} else {
@@ -118,7 +118,7 @@ node {
 					loadImage(distroDirPath, artifactName, releasedVersion, qaServerIP, utils)
 					utils.stopContainer(artifactName, qaServerIP)
 					// TODO: update the environment field "qa". CURRENTLY PASSING EMPTY
-					deployImage(artifactName, releasedVersion, "", qaServerIP, utils)
+					deployImage(artifactName, releasedVersion, "qa", qaServerIP, utils)
 				}
 			}
 		}
