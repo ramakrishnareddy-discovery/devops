@@ -21,7 +21,7 @@ node {
 		echo "workspacePath: ${workspacePath}"
 		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_api.git'
 		distroDirPath = "/product/jenkins/distro_api" 
-		def artifactName = 'demandplannerapi'
+		def artifactName = 'qualcomm-ms-demandplanner'
 		def prodServerIPString = "${PROD_BOX_IP}"
 		def releasedVersion = "${APPLICATION_VERSION}"
 		// =========== USER DEFINED VARS ===========
