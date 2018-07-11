@@ -127,14 +127,15 @@ try {
 		userApprovalQAInput = input(
 				id: 'userInput', message: 'Are you prepared to deploy?', parameters: [[$class: 'ChoiceParameterDefinition', choices: deployOptions, description: 'Approve/Disallow deployment', name: 'deploy-check']])
 		echo "userApprovalQAInput: ${userApprovalQAInput}"
-	}
+	
 
-	if (qaReleaseCandidate.toBoolean() && userApprovalQAInput == 'yes') {
-		echo "Provided secondary approval for QA Release."
-	} else if (qaReleaseCandidate.toBoolean() && userApprovalQAInput == 'no'){
-		echo "Didn't provide secondary approval for QA Release."
-		error 'FAIL'
-	}
+		if (qaReleaseCandidate.toBoolean() && userApprovalQAInput == 'yes') {
+			echo "Provided secondary approval for QA Release."
+		} else if (qaReleaseCandidate.toBoolean() && userApprovalQAInput == 'no'){
+			echo "Didn't provide secondary approval for QA Release."
+			error 'FAIL'
+		}
+	}	
 } catch(error) {
 	currentBuild.result = 'UNSTABLE'
 }
@@ -146,7 +147,7 @@ node {
 	Utils utils = new Utils()
 	try {
 		def workspacePath = pwd()
-		echo "workspacePath in SECOND NODE: ${workspacePath}"
+		echo "QA workspacePath: ${workspacePath}"
 		echo "artifactName: ${artifactName}"
 		echo "releasedVersion: ${releasedVersion}"
 		echo "qaServerIPString: ${qaServerIPString}"
