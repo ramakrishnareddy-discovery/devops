@@ -2,7 +2,7 @@
 @Library('JenkinsSharedLibrary') _
 
 // =========== GLOBAL VARS ===========
-def artifactName, releasedVersion , qaServerIPString, prodServerIPString, distroDirPath, qaReleaseCandidate, prodReleaseCandidate, userApprovalQAInput, userApprovalProdInput
+def artifactName, releasedVersion, qaServerIPString, prodServerIPString, distroDirPath, qaReleaseCandidate, prodReleaseCandidate, userApprovalQAInput, userApprovalProdInput, subjectText, bodyText
 // =========== GLOBAL VARS ===========
 
 // TODO: MAJOR_VERSION AND MINOR_VERSION PENDING. Refer: http://blog.soebes.de/blog/2017/04/02/maven-pom-files-without-a-version-in-it/
@@ -47,16 +47,15 @@ node {
 		// =========== USER DEFINED VARS ===========
 
 
-
 		checkout(applicationDir, GIT_BRANCH, apiRepoUrl, distroDirPath, distroRepoUrl, utils)
 		// Since artifactName and releasedVersion fetching from POM.xml, should execute after cloning the repo.
 		artifactName = utils.getArtifact(applicationDir)
 
 		dir(applicationDir) {
 			releasedVersion = sh (
-					script: """ mvn help:evaluate -Dexpression=project.version -Dv=${BUILD_NUMBER} | grep -e '^[^\\[]'  """,
-					returnStdout: true
-					).trim()
+			script: """ mvn help:evaluate -Dexpression=project.version -Dv=${BUILD_NUMBER} | grep -e '^[^\\[]'  """,
+			returnStdout: true
+			).trim()
 		}
 		echo "releasedVersion: ${releasedVersion}"
 
@@ -70,23 +69,8 @@ node {
 		dockerBuild()
 		saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils)
 		tagBranch(applicationDir, apiRepoUrl, releasedVersion, GIT_TAG, utils)
+		deploytoDev(devServerIPString, distroDirPath, artifactName, releasedVersion, utils)
 
-		// TODO: remove the tar files from server /home directory :
-		// TODO: try to execute Shell Script on Server : https://medium.com/devopslinks/a-hacky-hackers-guide-to-hacking-together-jenkins-scripted-pipelines-part-3-aca73bd33eaa
-		if (devServerIPString != null && devServerIPString != "") {
-			for (String devServerIP : devServerIPString.split(",")) {
-				dockerClean(artifactName, devServerIP, utils)
-				loadImage(distroDirPath, artifactName, releasedVersion, devServerIP, utils)
-				stage('deploy to DEV'){
-					utils.stopContainer(artifactName, devServerIP)
-					deployImage(artifactName, releasedVersion, "dev", devServerIP, utils)
-				}
-			}
-		}
-		else {
-			echo "Please provide dev server IP"
-			throw error
-		}
 	}catch (error) {
 		println error
 		// If there was an exception thrown, the build failed
@@ -103,7 +87,7 @@ node {
 if (qaReleaseCandidate.toBoolean()) {
 	echo "${releasedVersion} got primary approval to deploy to QA"
 } else {
-	echo "As per User Input, Not Proceeding with QA Deployment."
+	echo "As per ${user} Input, Not Proceeding with QA Deployment."
 	return
 }
 
@@ -115,45 +99,52 @@ stage('Deploy Approval -QA') {
 	echo "userApprovalQAInput: ${userApprovalQAInput}"
 }
 
-node {
-	if (qaReleaseCandidate.toBoolean() && userApprovalQAInput == 'yes') {
+if (qaReleaseCandidate.toBoolean() && userApprovalQAInput == 'yes') {
+	echo "${user} provided secondary approval for QA Release."
+} else if (qaReleaseCandidate.toBoolean() && userApprovalQAInput == 'no'){
+	echo "${user} didn't provide secondary approval for QA Release."
+	return;
+}
 
-		Utils utils = new Utils()
-		try {
-			def workspacePath = pwd()
-			echo "workspacePath in SECOND NODE: ${workspacePath}"
-			echo "artifactName: ${artifactName}"
-			echo "releasedVersion: ${releasedVersion}"
-			echo "qaServerIPString: ${qaServerIPString}"
-			echo "distroDirPath: ${distroDirPath}"
-			stage('deploy to QA') {
-				if (qaServerIPString != null && qaServerIPString != "") {
-					for (String qaServerIP : qaServerIPString.split(",")) {
+node {
+	Utils utils = new Utils()
+	def workspacePath = pwd()
+	echo "artifactName: ${artifactName}"
+	echo "releasedVersion: ${releasedVersion}"
+	echo "qaServerIPString: ${qaServerIPString}"
+	echo "distroDirPath: ${distroDirPath}"
+	echo "workspacePath: ${workspacePath} for QA Builds"
+	try {
+		
+			if (qaServerIPString != null && qaServerIPString != "") {
+				for (String qaServerIP : qaServerIPString.split(",")) {
+					stage("deploy to QA: ${qaServerIP}") {
 						dockerClean(artifactName, qaServerIP, utils)
 						loadImage(distroDirPath, artifactName, releasedVersion, qaServerIP, utils)
 						utils.stopContainer(artifactName, qaServerIP)
 						deployImage(artifactName, releasedVersion, "qa", qaServerIP, utils)
+						subjectText = "Build finished successfully! on ${qaServerIP}"
+						bodyText = "Build ${env.JOB_NAME} (${env.BUILD_NUMBER}) successfull!"
+						utils.sendEmailNotification(subjectText, bodyText)
 					}
-				}
-				else {
-					echo "Please provide QA server IP"
-					throw error
-				}
+				}	
 			}
-		} catch (error) {
-			println error
-			// If there was an exception thrown, the build failed
-			currentBuild.result = 'FAILURE'
-			throw error
-		} finally {
-			// Success or failure, always send notifications
-			utils.sendNotification(currentBuild.result)
-		}
-	} else if (userApprovalQAInput == 'no'){
-		echo "${user} didn't provide secondary approval for QA Release."
-		return;
+			else {
+				echo "Please provide QA server IP"
+				throw error
+			}
+	} catch (error) {
+		println error
+		// If there was an exception thrown, the build failed
+		// TODO: since currentBuild.result = 'FAILURE' set as failure, better pass IP and varible to email notification
+		//currentBuild.result = 'FAILURE'
+		subjectText = "Build finished unsuccessfully!"
+		bodyText = "It appears that ${env.BUILD_URL} is failing, somebody should do something about that!\n Please check console log."
+		throw error
+	} finally {
+		// Success or failure, always send notifications
+		utils.sendEmailNotification(subjectText, bodyText)
 	}
-
 }
 //--------------------------------------------------------- QA RELEASE CODE END ---------------------------------------------------------
 
@@ -162,7 +153,7 @@ if (prodReleaseCandidate.toBoolean()) {
 	echo "${releasedVersion} got primary approval to deploy to PROD"
 
 } else {
-	echo "As per User Input, Not Proceeding with PROD Deployment."
+	echo "As per ${user} Input, Not Proceeding with PROD Deployment."
 	return
 }
 
@@ -174,19 +165,48 @@ stage('Deploy Approval -PROD') {
 	echo "userApprovalProdInput: ${userApprovalProdInput}"
 }
 
+if (prodReleaseCandidate.toBoolean() && userApprovalProdInput == 'yes') {
+	echo "${user} provided secondary approval for PROD Release."
+} else if (userApprovalProdInput == 'no'){
+	echo "${user} didn't provide secondary approval for PROD Release."
+	return;
+}
+
 node {
 	Utils utils = new Utils()
-	stage('deploy to PROD') {
-		if (prodReleaseCandidate.toBoolean() && userApprovalProdInput == 'yes') {
-
-			echo "Proceed with Prod Deployment"
-
-		} else if (userApprovalProdInput == 'no'){
-			echo "${user} didn't provide secondary approval for QA Release."
-			return;
+	def workspacePath = pwd()
+	echo "artifactName: ${artifactName}"
+	echo "releasedVersion: ${releasedVersion}"
+	echo "qaServerIPString: ${qaServerIPString}"
+	echo "distroDirPath: ${distroDirPath}"
+	echo "workspacePath: ${workspacePath} for PROD Builds"
+	try {
+		stage('deploy to PROD') {
+			if (prodServerIPString != null && prodServerIPString != "") {
+				for (String prodServerIP : prodServerIPString.split(",")) {
+					dockerClean(artifactName, prodServerIP, utils)
+					loadImage(distroDirPath, artifactName, releasedVersion, prodServerIP, utils)
+					utils.stopContainer(artifactName, prodServerIP)
+					deployImage(artifactName, releasedVersion, "qa", prodServerIP, utils)
+				}
+			}
+			else {
+				echo "Please provide PROD server IP"
+				throw error
+			}
 		}
+	} catch (error) {
+		println error
+		// If there was an exception thrown, the build failed
+		// TODO: since currentBuild.result = 'FAILURE' set as failure, better pass IP and varible to email notification
+		//currentBuild.result = 'FAILURE'
+		throw error
+	} finally {
+		// Success or failure, always send notifications
+		utils.sendNotification(currentBuild.result)
 	}
 }
+
 //--------------------------------------------------------- PROD RELEASE CODE END ---------------------------------------------------------
 
 
@@ -265,6 +285,39 @@ def deployImage(artifactName, releasedVersion, PROP_ENV, destinationIP, utils) {
 	utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP)
 }
 
+def deployToDev(devServerIPString, distroDirPath, artifactName, releasedVersion, utils) {
+	// TODO: try to execute Shell Script on Server : https://medium.com/devopslinks/a-hacky-hackers-guide-to-hacking-together-jenkins-scripted-pipelines-part-3-aca73bd33eaa
+	try {
+		if (devServerIPString != null && devServerIPString != "") {
+			for (String devServerIP : devServerIPString.split(",")) {
+				stage("deploy to DEV: ${devServerIP}") { 
+					dockerClean(artifactName, devServerIP, utils)
+					loadImage(distroDirPath, artifactName, releasedVersion, devServerIP, utils)
+					utils.stopContainer(artifactName, devServerIP)
+					deployImage(artifactName, releasedVersion, "dev", devServerIP, utils)
+					subjectText = "Build finished successfully! on ${devServerIP}"
+					bodyText = "Build ${env.JOB_NAME} (${env.BUILD_NUMBER}) successfull!"
+					utils.sendEmailNotification(subjectText, bodyText)
+				}
+			}
+		}
+		else {
+			echo "Please provide dev server IP"
+			throw error
+		}
+	} catch (error) {
+		println error
+		// If there was an exception thrown, the build failed
+		// TODO: since currentBuild.result = 'FAILURE' set as failure, better pass IP and varible to email notification
+		currentBuild.result = 'FAILURE'
+		subjectText = "Build finished unsuccessfully!"
+		bodyText = "It appears that ${env.BUILD_URL} is failing, somebody should do something about that!\n Please check console log."
+		throw error
+	} finally {
+		// Success or failure, always send notifications
+		utils.sendEmailNotification(subjectText, bodyText)
+	}
+}
 
 // Assuming jenkins box is Dev BOX and deploying application to local box
 def deployToDev(artifactName, releasedVersion, PROP_ENV, utils) {
