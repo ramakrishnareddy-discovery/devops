@@ -18,7 +18,7 @@ node {
 			string(name: 'QA_BOX_IP', description: 'Comma separated servers IP', defaultValue: "10.0.31.242", trim: true),
 			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Save image to a tar archive'),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not')
-		]),
+		])
 	]
 	//projectProperties.add(pipelineTriggers([cron('H 21 * * *')]))
 
@@ -75,8 +75,6 @@ node {
 		saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils)
 		tagBranch(applicationDir, uiRepoUrl, releasedVersion, GIT_TAG, utils)
 
-		// TODO: remove the tar files from server /home directory :
-		// TODO: try to execute Shell Script on Server : https://medium.com/devopslinks/a-hacky-hackers-guide-to-hacking-together-jenkins-scripted-pipelines-part-3-aca73bd33eaa
 		for (String devServerIP : devServerIPString.split(",")) {
 			dockerClean(artifactName, devServerIP, utils)
 			loadImage(distroDirPath, artifactName, releasedVersion, devServerIP, utils)

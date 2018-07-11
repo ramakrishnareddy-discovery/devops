@@ -2,21 +2,23 @@
 @Library('JenkinsSharedLibrary') _
 
 // =========== GLOBAL VARS ===========
-def artifactName, releasedVersion , qaServerIPString, distroDirPath
+def artifactName, releasedVersion , qaServerIPString, distroDirPath,  userApprovalQAInput, isQADeployApproved = true
 // =========== GLOBAL VARS ===========
 
-// TODO: MAJOR_VERSION AND MINOR_VERSION PENDING. Refer: http://blog.soebes.de/blog/2017/04/02/maven-pom-files-without-a-version-in-it/
 node {
 	def projectProperties = [
 		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '3']],
 		disableConcurrentBuilds(),
 		parameters([
+			string(name: 'MAJOR_VERSION', description: '', defaultValue: "0", trim: true),
+			string(name: 'MINOR_VERSION', description: '', defaultValue: "SNAPSHOT", trim: true),
 			string(name: 'GIT_BRANCH', description: 'API Branch Name', defaultValue: "feature/dev",trim: true),
 			string(name: 'DEV_BOX_IP', description: 'comma separated servers IP', defaultValue: "10.0.31.138", trim: true),
+			booleanParam(name: 'QA_RELEASE_CANDIDATE', defaultValue: false, description: 'Promote to QA or Not'),
 			string(name: 'QA_BOX_IP', description: 'comma separated servers IP', defaultValue: "10.0.31.242", trim: true),
 			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Save image to a tar archive'),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not')
-		]),
+		])
 	]
 	projectProperties.add(pipelineTriggers([upstream(threshold: hudson.model.Result.SUCCESS,upstreamProjects: "common")]))
 	properties(projectProperties)
@@ -41,7 +43,9 @@ node {
 		qaServerIPString = "${QA_BOX_IP}"
 		// =========== USER DEFINED VARS ===========
 
-		
+		if (!devServerIPString?.trim()) {
+			error "Missing DEV server IP in Build Parameters"
+		}
 
 		checkout(applicationDir, GIT_BRANCH, apiRepoUrl, distroDirPath, distroRepoUrl, utils)
 		// Since artifactName and releasedVersion fetching from POM.xml, should execute after cloning the repo.
@@ -66,75 +70,110 @@ node {
 		saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils)
 		tagBranch(applicationDir, apiRepoUrl, releasedVersion, GIT_TAG, utils)
 
-		// TODO: remove the tar files from server /home directory :
-		// TODO: try to execute Shell Script on Server : https://medium.com/devopslinks/a-hacky-hackers-guide-to-hacking-together-jenkins-scripted-pipelines-part-3-aca73bd33eaa
-		if (devServerIPString != null && devServerIPString != "") {
-			for (String devServerIP : devServerIPString.split(",")) {
-				dockerClean(artifactName, devServerIP, utils)
-				loadImage(distroDirPath, artifactName, releasedVersion, devServerIP, utils)
-				stage('deploy to DEV'){
-					utils.stopContainer(artifactName, devServerIP)
-					deployImage(artifactName, releasedVersion, "dev", devServerIP, utils)
-				}
+		for (String devServerIP : devServerIPString.split(",")) {
+			dockerClean(artifactName, devServerIP, utils)
+			loadImage(distroDirPath, artifactName, releasedVersion, devServerIP, utils)
+			stage("deploy to DEV: ${devServerIP}"){
+				utils.stopContainer(artifactName, devServerIP)
+				deployImage(artifactName, releasedVersion, "dev", devServerIP, utils)
+
+				subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' on ${devServerIP}"
+				bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}] on ${devServerIP}':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
+				utils.sendEmailNotification(subjectText, bodyText)
 			}
 		}
-		else {
-			echo "Please provide dev server IP"
-			throw error
-		}
+
 	}catch (error) {
 		println error
 		// If there was an exception thrown, the build failed
-		currentBuild.result = 'FAILURE'
+		// currentBuild.result = 'FAILURE'
+		subjectText = "JENKINS Notification: FAILED Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
+		bodyText = """ <p>FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
+		utils.sendEmailNotification(subjectText, bodyText)
 		throw error
-	} finally {
-		// Success or failure, always send notifications
-		utils.sendNotification(currentBuild.result)
-		//mail subject: "Build finished unsuccessfully", body: "It appears that ${env.BUILD_URL}", to: "r.satti@accenture.com", from: "noreply_jenkins@qcom.accenture.com"
 	}
 }
 
+//--------------------------------------------------------- QA PRIMARY APPROVAL CHECK BEGIN ---------------------------------------------------------
 
-stage('Deploy Approval') {
-        def deployOptions = 'no\nyes'
-        def userInput = input(
-          id: 'userInput', message: 'Are you prepared to deploy?', parameters: [
-          [$class: 'ChoiceParameterDefinition', choices: deployOptions, description: 'Approve/Disallow deployment', name: 'deploy-check']
-          ]
-        )
-        echo "you selected: ${userInput}"
+if (qaReleaseCandidate.toBoolean()) {
+	echo "${releasedVersion} got primary approval to deploy to QA"
+} else {
+	echo "As per Input, Not Proceeding with QA Deployment."
+	return
 }
 
+//--------------------------------------------------------- QA PRIMARY APPROVAL CHECK END ---------------------------------------------------------
+
+
+//--------------------------------------------------------- QA  SECONDARY APPROVAL CHECK BEGIN ---------------------------------------------------------
+//Show a Jenkins pipeline stage as failed without failing the whole job
+try {
+	stage('Deploy Approval - QA') {
+		def deployOptions = 'no\nyes'
+		userApprovalQAInput = input(
+				id: 'userInput', message: 'Are you prepared to deploy?', parameters: [[$class: 'ChoiceParameterDefinition', choices: deployOptions, description: 'Approve/Disallow deployment', name: 'deploy-check']])
+		echo "userApprovalQAInput: ${userApprovalQAInput}"
+	
+
+		if (qaReleaseCandidate.toBoolean() && userApprovalQAInput == 'yes') {
+			echo "${releasedVersion} got secondary approval for QA Release."
+		} else if (qaReleaseCandidate.toBoolean() && userApprovalQAInput == 'no'){
+			echo "${releasedVersion} didn't get secondary approval for QA Release."
+			error 'FAIL'    // Fails the Stage
+		}
+	}	
+} catch(error) {
+	//currentBuild.result = 'UNSTABLE'
+	echo "Exception: ${error}"
+	echo "currentBuild.result: ${currentBuild.result}"
+	isQADeployApproved = false
+}
+//--------------------------------------------------------- QA SECONDARY APPROVAL CHECK END ---------------------------------------------------------
+
+//--------------------------------------------------------- QA  DEPLOYMENT BEGIN ---------------------------------------------------------
+if (isQADeployApproved) {
 node {
 	Utils utils = new Utils()
 	try {
 		def workspacePath = pwd()
-		echo "workspacePath in SECOND NODE: ${workspacePath}"
+		echo "workspacePath: ${workspacePath}"
 		echo "artifactName: ${artifactName}"
 		echo "releasedVersion: ${releasedVersion}"
 		echo "qaServerIPString: ${qaServerIPString}"
 		echo "distroDirPath: ${distroDirPath}"
-		stage('deploy to QA') {
-			if (qaServerIPString != null && qaServerIPString != "") {
+
+		if (!qaServerIPString?.trim()) {
+					error "Missing QA server IP in Build Parameters"
+			}
+
+		
+			
 				for (String qaServerIP : qaServerIPString.split(",")) {
+					stage("deploy to QA: ${qaServerIP}") {
 					dockerClean(artifactName, qaServerIP, utils)
 					loadImage(distroDirPath, artifactName, releasedVersion, qaServerIP, utils)
 					utils.stopContainer(artifactName, qaServerIP)
 					deployImage(artifactName, releasedVersion, "qa", qaServerIP, utils)
-				}	
-			}
+
+					subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' on ${qaServerIP}"
+					bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}] on ${qaServerIP}':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
+					utils.sendEmailNotification(subjectText, bodyText)
+				}
+			
 		}
 	} catch (error) {
-		println error
-		// If there was an exception thrown, the build failed
-		currentBuild.result = 'FAILURE'
-		throw error
-	} finally {
-		// Success or failure, always send notifications
-		utils.sendNotification(currentBuild.result)
-	}
+			println error
+			// If there was an exception thrown, the build failed
+			//currentBuild.result = 'FAILURE'
+			subjectText = "JENKINS Notification: FAILED Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' for QA ENV"
+			bodyText = """ <p>FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
+			utils.sendEmailNotification(subjectText, bodyText)
+			throw error
+		}
 }
-
+}
+//--------------------------------------------------------- Utlity Methods START ---------------------------------------------------------
 
 def checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl, utils) {
 	stage('Git Checkout') {
@@ -217,7 +256,7 @@ def deployToDev(artifactName, releasedVersion, PROP_ENV, utils) {
 }
 
 
-/*  
+/*
  // This  method add an input step with timeout that continues if timeout is reached using a default value.
  stage('deploy to QA'){
  userAborted = false
@@ -250,3 +289,5 @@ def deployToDev(artifactName, releasedVersion, PROP_ENV, utils) {
  }
  }
  */
+
+//--------------------------------------------------------- Utlity Methods END ---------------------------------------------------------
