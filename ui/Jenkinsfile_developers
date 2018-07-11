@@ -49,6 +49,10 @@ node {
 		currentBuild.displayName = "${artifactName}.${releasedVersion}"
 		echo "workspacePath: ${workspacePath}"
 
+		if (!devServerIPString?.trim()) {
+			error "Please provide dev server IP"
+		}
+
 		stage('Git Checkout') {
 			utils.sourceCodeCheckout(applicationDir, branchName, uiRepoUrl, distroDirPath, distroRepoUrl)
 		}
@@ -74,13 +78,11 @@ node {
 		// TODO: remove the tar files from server /home directory :
 		// TODO: try to execute Shell Script on Server : https://medium.com/devopslinks/a-hacky-hackers-guide-to-hacking-together-jenkins-scripted-pipelines-part-3-aca73bd33eaa
 		//if (devServerIPString != null && devServerIPString != "") {
-		if (devServerIPString?.trim()) {
 			for (String devServerIP : devServerIPString.split(",")) {
 				dockerClean(artifactName, devServerIP, utils)
 				loadImage(distroDirPath, artifactName, releasedVersion, devServerIP, utils)
 				stage('deploy to DEV'){
 					utils.stopContainer(artifactName, devServerIP)
-					// TODO: update the environment field "dev". CURRENTLY PASSING EMPTY
 					deployImage(artifactName, releasedVersion, "dev", devServerIP, utils)
 
 					subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' on ${devServerIP}"
@@ -88,10 +90,7 @@ node {
 					utils.sendEmailNotification(subjectText, bodyText)
 				}
 			}	
-		} else {
-			echo "Please provide dev server IP"
-			throw error
-		}
+		
 	}catch (error) {
 		println error
 		// If there was an exception thrown, the build failed
