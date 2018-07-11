@@ -130,10 +130,10 @@ try {
 	
 
 		if (qaReleaseCandidate.toBoolean() && userApprovalQAInput == 'yes') {
-			echo "Provided secondary approval for QA Release."
+			echo "${releasedVersion} got secondary approval for QA Release."
 		} else if (qaReleaseCandidate.toBoolean() && userApprovalQAInput == 'no'){
-			echo "Didn't provide secondary approval for QA Release."
-			error 'FAIL'
+			echo "${releasedVersion} didn't get secondary approval for QA Release."
+			error 'FAIL'    // Fails the Stage
 		}
 	}	
 } catch(error) {
