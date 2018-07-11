@@ -186,7 +186,7 @@ if (isQADeployApproved) {
 //--------------------------------------------------------- QA  DEPLOYMENT END ---------------------------------------------------------
 
 
-//--------------------------------------------------------- Utlity Methods START ---------------------------------------------------------
+//--------------------------------------------------------- Utility Methods START ---------------------------------------------------------
 def saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils) {
 	stage('Save Image to Tar Archive') {
 		utils.saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH)
@@ -218,4 +218,4 @@ def deployImage(artifactName, releasedVersion, PROP_ENV, destinationIP, utils) {
 	utils.promoteUIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP)
 }
 
-//--------------------------------------------------------- Utlity Methods END ---------------------------------------------------------
+//--------------------------------------------------------- Utility Methods END ---------------------------------------------------------
