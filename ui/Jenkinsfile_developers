@@ -121,23 +121,22 @@ if (qaReleaseCandidate.toBoolean()) {
  */
 
 //--------------------------------------------------------- QA  SECONDARY APPROVAL CHECK BEGIN ---------------------------------------------------------
-stage('Deploy Approval - QA') {
-	def deployOptions = 'no\nyes'
-	userApprovalQAInput = input(
-			id: 'userInput', message: 'Are you prepared to deploy?', parameters: [[$class: 'ChoiceParameterDefinition', choices: deployOptions, description: 'Approve/Disallow deployment', name: 'deploy-check']])
-	echo "userApprovalQAInput: ${userApprovalQAInput}"
-}
 try {
+	stage('Deploy Approval - QA') {
+		def deployOptions = 'no\nyes'
+		userApprovalQAInput = input(
+				id: 'userInput', message: 'Are you prepared to deploy?', parameters: [[$class: 'ChoiceParameterDefinition', choices: deployOptions, description: 'Approve/Disallow deployment', name: 'deploy-check']])
+		echo "userApprovalQAInput: ${userApprovalQAInput}"
+	}
+
 	if (qaReleaseCandidate.toBoolean() && userApprovalQAInput == 'yes') {
 		echo "Provided secondary approval for QA Release."
 	} else if (qaReleaseCandidate.toBoolean() && userApprovalQAInput == 'no'){
 		echo "Didn't provide secondary approval for QA Release."
 		error 'FAIL'
-		//sh "exit 1" // this fails the stage
-		//return;
 	}
 } catch(error) {
-	currentBuild.result = 'SUCCESS'
+	currentBuild.result = 'UNSTABLE'
 }
 //--------------------------------------------------------- QA SECONDARY APPROVAL CHECK END ---------------------------------------------------------
 
