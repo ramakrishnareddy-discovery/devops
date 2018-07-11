@@ -2,7 +2,7 @@
 @Library('JenkinsSharedLibrary') _
 
 // =========== GLOBAL VARS ===========
-def artifactName, releasedVersion , qaServerIPString, distroDirPath, userApprovalQAInput
+def artifactName, releasedVersion , qaServerIPString, distroDirPath, userApprovalQAInput, isQADeployApproved = true
 // =========== GLOBAL VARS ===========
 
 node {
@@ -137,46 +137,50 @@ try {
 		}
 	}	
 } catch(error) {
-	currentBuild.result = 'UNSTABLE'
+	//currentBuild.result = 'UNSTABLE'
+	isQADeployApproved = false
+
 }
 //--------------------------------------------------------- QA SECONDARY APPROVAL CHECK END ---------------------------------------------------------
 
 
 //--------------------------------------------------------- QA  DEPLOYMENT BEGIN ---------------------------------------------------------
-node {
-	Utils utils = new Utils()
-	try {
-		def workspacePath = pwd()
-		echo "QA workspacePath: ${workspacePath}"
-		echo "artifactName: ${artifactName}"
-		echo "releasedVersion: ${releasedVersion}"
-		echo "qaServerIPString: ${qaServerIPString}"
-		echo "distroDirPath: ${distroDirPath}"
+if (isQADeployApproved) {
+	node {
+		Utils utils = new Utils()
+		try {
+			def workspacePath = pwd()
+			echo "QA workspacePath: ${workspacePath}"
+			echo "artifactName: ${artifactName}"
+			echo "releasedVersion: ${releasedVersion}"
+			echo "qaServerIPString: ${qaServerIPString}"
+			echo "distroDirPath: ${distroDirPath}"
 
-		if (!qaServerIPString?.trim()) {
-				error "Missing QA server IP in Build Parameters"
-		}
-		
-		for (String qaServerIP : qaServerIPString.split(",")) {
-			stage("deploy to QA: ${qaServerIP}") {
-				dockerClean(artifactName, qaServerIP, utils)
-				loadImage(distroDirPath, artifactName, releasedVersion, qaServerIP, utils)
-				utils.stopContainer(artifactName, qaServerIP)
-				deployImage(artifactName, releasedVersion, "qa", qaServerIP, utils)
-
-				subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' on ${qaServerIP}"
-				bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}] on ${qaServerIP}':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
-				utils.sendEmailNotification(subjectText, bodyText)
+			if (!qaServerIPString?.trim()) {
+					error "Missing QA server IP in Build Parameters"
 			}
+			
+			for (String qaServerIP : qaServerIPString.split(",")) {
+				stage("deploy to QA: ${qaServerIP}") {
+					dockerClean(artifactName, qaServerIP, utils)
+					loadImage(distroDirPath, artifactName, releasedVersion, qaServerIP, utils)
+					utils.stopContainer(artifactName, qaServerIP)
+					deployImage(artifactName, releasedVersion, "qa", qaServerIP, utils)
+
+					subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' on ${qaServerIP}"
+					bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}] on ${qaServerIP}':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
+					utils.sendEmailNotification(subjectText, bodyText)
+				}
+			}
+		} catch (error) {
+			println error
+			// If there was an exception thrown, the build failed
+			//currentBuild.result = 'FAILURE'
+			subjectText = "JENKINS Notification: FAILED Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' for QA ENV"
+			bodyText = """ <p>FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
+			utils.sendEmailNotification(subjectText, bodyText)
+			throw error
 		}
-	} catch (error) {
-		println error
-		// If there was an exception thrown, the build failed
-		//currentBuild.result = 'FAILURE'
-		subjectText = "JENKINS Notification: FAILED Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' for QA ENV"
-		bodyText = """ <p>FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
-		utils.sendEmailNotification(subjectText, bodyText)
-		throw error
 	}
 }
 //--------------------------------------------------------- QA  DEPLOYMENT END ---------------------------------------------------------
