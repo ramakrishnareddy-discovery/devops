@@ -77,11 +77,10 @@ node {
 
 		// TODO: remove the tar files from server /home directory :
 		// TODO: try to execute Shell Script on Server : https://medium.com/devopslinks/a-hacky-hackers-guide-to-hacking-together-jenkins-scripted-pipelines-part-3-aca73bd33eaa
-		//if (devServerIPString != null && devServerIPString != "") {
 		for (String devServerIP : devServerIPString.split(",")) {
 			dockerClean(artifactName, devServerIP, utils)
 			loadImage(distroDirPath, artifactName, releasedVersion, devServerIP, utils)
-			stage("deploy to ${devServerIP}"){
+			stage("deploy to DEV: ${devServerIP}"){
 				utils.stopContainer(artifactName, devServerIP)
 				deployImage(artifactName, releasedVersion, "dev", devServerIP, utils)
 
@@ -107,7 +106,7 @@ node {
 if (qaReleaseCandidate.toBoolean()) {
 	echo "${releasedVersion} got primary approval to deploy to QA"
 } else {
-	echo "As per ${env.USER} Input, Not Proceeding with QA Deployment."
+	echo "As per Input, Not Proceeding with QA Deployment."
 	return
 }
 
@@ -130,10 +129,11 @@ stage('Deploy Approval - QA') {
 }
 
 if (qaReleaseCandidate.toBoolean() && userApprovalQAInput == 'yes') {
-	echo "${env.USER} provided secondary approval for QA Release."
+	echo "Provided secondary approval for QA Release."
 } else if (qaReleaseCandidate.toBoolean() && userApprovalQAInput == 'no'){
-	echo "${env.USER} didn't provide secondary approval for QA Release."
-	return;
+	echo "Didn't provide secondary approval for QA Release."
+	error 'FAIL'
+	//return;
 }
 //--------------------------------------------------------- QA SECONDARY APPROVAL CHECK END ---------------------------------------------------------
 
@@ -154,7 +154,7 @@ node {
 		}
 		
 		for (String qaServerIP : qaServerIPString.split(",")) {
-			stage("deploy to ${qaServerIP}") {
+			stage("deploy to QA: ${qaServerIP}") {
 				dockerClean(artifactName, qaServerIP, utils)
 				loadImage(distroDirPath, artifactName, releasedVersion, qaServerIP, utils)
 				utils.stopContainer(artifactName, qaServerIP)
