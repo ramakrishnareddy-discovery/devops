@@ -7,10 +7,12 @@ node {
 			[$class: 'LogRotator', numToKeepStr: '3']],
 		disableConcurrentBuilds(),
 		parameters([
+			string(name: 'MAJOR_VERSION', description: '', defaultValue: "0", trim: true),
+			string(name: 'MINOR_VERSION', description: '', defaultValue: "SNAPSHOT", trim: true),
 			string(name: 'GIT_BRANCH', description: ' Branch Name', defaultValue: "feature/dev", trim: true),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, 	description: 'Tagging required or not')
 		]),
-		pipelineTriggers([ cron('H 6,11 * * *') ])
+		//pipelineTriggers([ cron('H 6,11 * * *') ])
 	])
 
 	Utils utils = new Utils()
@@ -24,6 +26,12 @@ node {
 		def applicationDir = "common"
 		
 		// =========== USER DEFINED VARS ===========
+
+		// TODO: MAJOR_VERSION AND MINOR_VERSION PENDING. Refer: http://blog.soebes.de/blog/2017/04/02/maven-pom-files-without-a-version-in-it/
+		// Append ${BUILD_NUMBER}
+		//${revision}
+		//currentBuild.displayName = "${artifactName}.${releasedVersion}"
+		//def releasedVersion = "${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}"
 
 		checkout(applicationDir, commonRepoUrl, GIT_BRANCH, utils)
 		build(applicationDir)
@@ -70,6 +78,8 @@ def tagBranch(applicationDir, commonRepoUrl, GIT_TAG, utils) {
 	if (GIT_TAG.toBoolean()) {
 		stage('Tag Branch') {
 			//Fetching Released Version from POM.xml and appending BUILD_NUMBER
+			// TODO: MAJOR_VERSION AND MINOR_VERSION PENDING. Refer: http://blog.soebes.de/blog/2017/04/02/maven-pom-files-without-a-version-in-it/
+			// Append ${BUILD_NUMBER}
 			def taggedVersion = utils.getReleasedVersion(applicationDir) + ".${BUILD_NUMBER}"
 			echo "taggedVersion: ${taggedVersion}"
 
