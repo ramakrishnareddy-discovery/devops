@@ -57,7 +57,7 @@ node {
 	}
 }
 
-//--------------------------------------------------------- Utlity Methods START ---------------------------------------------------------
+//--------------------------------------------------------- Utility Methods START ---------------------------------------------------------
 
 def dockerClean(artifactName, serverIP, utils) {
 	//stage('Docker Clean'){
@@ -75,4 +75,4 @@ def deployImage(artifactName, releasedVersion, PROP_ENV, destinationIP, utils) {
 	utils.promoteUIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP)
 }
 
-//--------------------------------------------------------- Utlity Methods END ---------------------------------------------------------
+//--------------------------------------------------------- Utility Methods END ---------------------------------------------------------
