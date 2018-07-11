@@ -81,7 +81,7 @@ node {
 				stage('deploy to DEV'){
 					utils.stopContainer(artifactName, devServerIP)
 					// TODO: update the environment field "dev". CURRENTLY PASSING EMPTY
-					deployImage(artifactName, releasedVersion, "", devServerIP, utils)
+					deployImage(artifactName, releasedVersion, "dev", devServerIP, utils)
 
 					subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' on ${devServerIP}"
 					bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}] on ${devServerIP}':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
@@ -108,7 +108,7 @@ node {
 if (qaReleaseCandidate.toBoolean()) {
 	echo "${releasedVersion} got primary approval to deploy to QA"
 } else {
-	echo "As per ${user} Input, Not Proceeding with QA Deployment."
+	echo "As per ${env.USER} Input, Not Proceeding with QA Deployment."
 	return
 }
 
@@ -131,9 +131,9 @@ stage('Deploy Approval - QA') {
 }
 
 if (qaReleaseCandidate.toBoolean() && userApprovalQAInput == 'yes') {
-	echo "${user} provided secondary approval for QA Release."
+	echo "${env.USER} provided secondary approval for QA Release."
 } else if (qaReleaseCandidate.toBoolean() && userApprovalQAInput == 'no'){
-	echo "${user} didn't provide secondary approval for QA Release."
+	echo "${env.USER} didn't provide secondary approval for QA Release."
 	return;
 }
 //--------------------------------------------------------- QA SECONDARY APPROVAL CHECK END ---------------------------------------------------------
@@ -157,7 +157,7 @@ node {
 					loadImage(distroDirPath, artifactName, releasedVersion, qaServerIP, utils)
 					utils.stopContainer(artifactName, qaServerIP)
 					// TODO: update the environment field "qa". CURRENTLY PASSING EMPTY
-					deployImage(artifactName, releasedVersion, "", qaServerIP, utils)
+					deployImage(artifactName, releasedVersion, "qa", qaServerIP, utils)
 
 					subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' on ${qaServerIP}"
 					bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}] on ${qaServerIP}':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
