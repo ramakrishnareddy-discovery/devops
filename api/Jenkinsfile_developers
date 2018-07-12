@@ -97,7 +97,8 @@ node {
 
 //--------------------------------------------------------- QA PRIMARY APPROVAL CHECK BEGIN ---------------------------------------------------------
 
-if (qaReleaseCandidate.toBoolean()) {
+echo "qaReleaseCandidate Value: ${qaReleaseCandidate}"
+if (qaReleaseCandidate?.trim() && qaReleaseCandidate.toBoolean()) {
 	echo "${releasedVersion} got primary approval to deploy to QA"
 } else {
 	echo "As per Input, Not Proceeding with QA Deployment."
