@@ -72,7 +72,7 @@ def loadImage(distroDirPath, artifactName, releasedVersion, destinationIP, utils
 }
 
 def deployImage(artifactName, releasedVersion, PROP_ENV, destinationIP, utils) {
-	utils.promoteUIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP)
+	utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP)
 }
 
 //--------------------------------------------------------- Utility Methods END ---------------------------------------------------------
