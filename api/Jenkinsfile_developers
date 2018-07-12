@@ -2,7 +2,7 @@
 @Library('JenkinsSharedLibrary') _
 
 // =========== GLOBAL VARS ===========
-def artifactName, releasedVersion , qaServerIPString, distroDirPath,  userApprovalQAInput, isQADeployApproved = true
+def artifactName, releasedVersion , qaServerIPString, distroDirPath,  userApprovalQAInput, qaReleaseCandidate, isQADeployApproved = true
 // =========== GLOBAL VARS ===========
 
 node {
@@ -40,6 +40,7 @@ node {
 
 		def applicationDir = "demandplannerapi"
 		def devServerIPString = "${DEV_BOX_IP}"
+		qaReleaseCandidate = "${QA_RELEASE_CANDIDATE}"
 		qaServerIPString = "${QA_BOX_IP}"
 		// =========== USER DEFINED VARS ===========
 
