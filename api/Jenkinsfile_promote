@@ -1,20 +1,13 @@
 #!/usr/bin/env groovy
 @Library('JenkinsSharedLibrary') _
 
-String FALLBACK_SCRIPT = "return ['Error']"
-
-def dpVersionNumber = "cat /product/jenkins/distro_api/version.txt".execute().text
-//def list = multiline.readLines()
-
-echo "${dpVersionNumber}"
-
 node {
 	def projectProperties = [
 		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '5']],
 		disableConcurrentBuilds(),
 		parameters([
 			string(name: 'PROD_BOX_IP', description: '', defaultValue: "10.0.31.242", trim: true),
-			choice(name: 'APPLICATION_VERSION', choices:"${dpVersionNumber}", description: "Application Version")
+			string(name: 'APPLICATION_VERSION', description: 'Application Version', defaultValue: "", trim: true)
 		])
 	]
 
