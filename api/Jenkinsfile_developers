@@ -52,16 +52,12 @@ node {
 		// Since artifactName and releasedVersion fetching from POM.xml, should execute after cloning the repo.
 		artifactName = utils.getArtifact(applicationDir)
 
-		/*
 		dir(applicationDir) {
 			releasedVersion = sh (
 					script: """ mvn help:evaluate -Dexpression=project.version -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER} | grep -e '^[^\\[]'  """,
 					returnStdout: true
 					).trim()
 		}
-		*/
-
-		releasedVersion = "${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}"
 		echo "releasedVersion: ${releasedVersion}"
 
 		currentBuild.displayName = "${artifactName}.${releasedVersion}"
@@ -189,19 +185,19 @@ def checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUr
 
 def build(applicationDir) {
 	stage ('Maven Build') {
-		dir(applicationDir) { sh "mvn clean install -Dmaven.test.skip=true -Drevision=${releasedVersion}" }
+		dir(applicationDir) { sh "mvn clean install -Dmaven.test.skip=true -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}" }
 	}
 }
 
 def allTests(applicationDir) {
-	stage ('Junit Test') { dir(applicationDir) {sh "mvn test -Drevision=${releasedVersion}" }}
+	stage ('Junit Test') { dir(applicationDir) {sh "mvn test -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}" }}
 }
 
 def sonarScanner(applicationDir) {
 	stage('SonarQube Analysis') {
 		dir(applicationDir) {
 			withSonarQubeEnv('SonarQube_V7') { // SonarQube taskId is automatically attached to the pipeline context
-				sh "mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.3.0.603:sonar -Drevision=${releasedVersion}" }
+				sh "mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.3.0.603:sonar -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}" }
 		}
 	}
 }
@@ -215,7 +211,7 @@ def dockerBuild() {
 	stage('Docker Build'){
 		dir('demandplannerapi') {
 			echo "Starting Docker Image Creation..."
-			sh "mvn docker:build -Drevision=${releasedVersion}"
+			sh "mvn docker:build -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}"
 			echo "Docker Image Creation Complted..."
 		}
 	}
