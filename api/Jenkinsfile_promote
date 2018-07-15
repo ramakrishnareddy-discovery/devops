@@ -14,7 +14,6 @@ node {
 		disableConcurrentBuilds(),
 		parameters([
 			string(name: 'PROD_BOX_IP', description: '', defaultValue: "10.0.31.242", trim: true),
-			string(name: 'TEST', description: '', defaultValue: "~@ignore", trim: true),
 			choice(name: 'APPLICATION_VERSION', choices:"${dpVersionNumber}", description: "Application Version")
 		])
 	]

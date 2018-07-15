@@ -11,6 +11,8 @@ node {
 		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '3']],
 		disableConcurrentBuilds(),
 		parameters([
+			string(name: 'MAJOR_VERSION', description: '', defaultValue: "0", trim: true),
+			string(name: 'MINOR_VERSION', description: '', defaultValue: "SNAPSHOT", trim: true),
 			string(name: 'GIT_BRANCH', description: 'API Branch Name', defaultValue: "feature/dev",trim: true),
 			string(name: 'DEV_BOX_IP', description: 'comma separated servers IP', defaultValue: "10.0.31.138", trim: true),
 			string(name: 'QA_BOX_IP', description: 'comma separated servers IP', defaultValue: "10.0.31.242", trim: true),
@@ -49,7 +51,7 @@ node {
 
 		dir(applicationDir) {
 			releasedVersion = sh (
-					script: """ mvn help:evaluate -Dexpression=project.version -Dv=${BUILD_NUMBER} | grep -e '^[^\\[]'  """,
+					script: """ mvn help:evaluate -Dexpression=project.version -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER} | grep -e '^[^\\[]'  """,
 					returnStdout: true
 					).trim()
 		}
@@ -144,19 +146,19 @@ def checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUr
 
 def build(applicationDir) {
 	stage ('Maven Build') {
-		dir(applicationDir) { sh "mvn clean install -Dmaven.test.skip=true -Dv=${BUILD_NUMBER}" }
+		dir(applicationDir) { sh "mvn clean install -Dmaven.test.skip=true -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}" }
 	}
 }
 
 def allTests(applicationDir) {
-	stage ('Junit Test') { dir(applicationDir) {sh "mvn test -Dv=${BUILD_NUMBER}" }}
+	stage ('Junit Test') { dir(applicationDir) {sh "mvn test -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}" }}
 }
 
 def sonarScanner(applicationDir) {
 	stage('SonarQube Analysis') {
 		dir(applicationDir) {
 			withSonarQubeEnv('SonarQube_V7') { // SonarQube taskId is automatically attached to the pipeline context
-				sh "mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.3.0.603:sonar -Dv=${BUILD_NUMBER}" }
+				sh "mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.3.0.603:sonar -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}" }
 		}
 	}
 }
@@ -170,7 +172,7 @@ def dockerBuild() {
 	stage('Docker Build'){
 		dir('demandplannerapi') {
 			echo "Starting Docker Image Creation..."
-			sh "mvn docker:build -Dv=${BUILD_NUMBER}"
+			sh "mvn docker:build -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}"
 			echo "Docker Image Creation Complted..."
 		}
 	}
