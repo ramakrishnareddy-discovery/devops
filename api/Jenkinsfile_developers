@@ -197,7 +197,7 @@ def allTests(applicationDir) {
 def processCodeCoverage(applicationDir) {
 	stage('Cobertura Code Coverage') {
 		dir(applicationDir) {
-			sh  "mvn cobertura:cobertura -Dcobertura.report.format=xml"
+			sh  "mvn cobertura:cobertura -Dcobertura.report.format=xml -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}"
 			cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: '**/target/site/cobertura/*.xml',
 			failNoReports: false, failUnhealthy: false, failUnstable: false,  maxNumberOfBuilds: 0,
 			onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false}
