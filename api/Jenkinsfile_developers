@@ -64,6 +64,7 @@ node {
 
 		build(applicationDir)
 		allTests(applicationDir)
+		processCodeCoverage(applicationDir)
 		sonarScanner(applicationDir)
 		allCodeQualityTests(utils)
 		utils.removeImages(artifactName)  // To clean images created on Jenkins BOX
@@ -116,7 +117,7 @@ try {
 		userApprovalQAInput = input(
 				id: 'userInput', message: 'Are you prepared to deploy?', parameters: [[$class: 'ChoiceParameterDefinition', choices: deployOptions, description: 'Approve/Disallow deployment', name: 'deploy-check']])
 		echo "userApprovalQAInput: ${userApprovalQAInput}"
-	
+
 
 		if (qaReleaseCandidate.toBoolean() && userApprovalQAInput == 'yes') {
 			echo "${releasedVersion} got secondary approval for QA Release."
@@ -124,7 +125,7 @@ try {
 			echo "${releasedVersion} didn't get secondary approval for QA Release."
 			error 'FAIL'    // Fails the Stage
 		}
-	}	
+	}
 } catch(error) {
 	//currentBuild.result = 'UNSTABLE'
 	echo "Exception: ${error}"
@@ -135,24 +136,24 @@ try {
 
 //--------------------------------------------------------- QA  DEPLOYMENT BEGIN ---------------------------------------------------------
 if (isQADeployApproved) {
-node {
-	Utils utils = new Utils()
-	try {
-		def workspacePath = pwd()
-		echo "workspacePath: ${workspacePath}"
-		echo "artifactName: ${artifactName}"
-		echo "releasedVersion: ${releasedVersion}"
-		echo "qaServerIPString: ${qaServerIPString}"
-		echo "distroDirPath: ${distroDirPath}"
+	node {
+		Utils utils = new Utils()
+		try {
+			def workspacePath = pwd()
+			echo "workspacePath: ${workspacePath}"
+			echo "artifactName: ${artifactName}"
+			echo "releasedVersion: ${releasedVersion}"
+			echo "qaServerIPString: ${qaServerIPString}"
+			echo "distroDirPath: ${distroDirPath}"
 
-		if (!qaServerIPString?.trim()) {
-					error "Missing QA server IP in Build Parameters"
+			if (!qaServerIPString?.trim()) {
+				error "Missing QA server IP in Build Parameters"
 			}
 
-		
-			
-				for (String qaServerIP : qaServerIPString.split(",")) {
-					stage("deploy to QA: ${qaServerIP}") {
+
+
+			for (String qaServerIP : qaServerIPString.split(",")) {
+				stage("deploy to QA: ${qaServerIP}") {
 					dockerClean(artifactName, qaServerIP, utils)
 					loadImage(distroDirPath, artifactName, releasedVersion, qaServerIP, utils)
 					utils.stopContainer(artifactName, qaServerIP)
@@ -162,9 +163,9 @@ node {
 					bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}] on ${qaServerIP}':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
 					utils.sendEmailNotification(subjectText, bodyText)
 				}
-			
-		}
-	} catch (error) {
+
+			}
+		} catch (error) {
 			println error
 			// If there was an exception thrown, the build failed
 			//currentBuild.result = 'FAILURE'
@@ -173,7 +174,7 @@ node {
 			utils.sendEmailNotification(subjectText, bodyText)
 			throw error
 		}
-}
+	}
 }
 //--------------------------------------------------------- Utility Methods START ---------------------------------------------------------
 
@@ -191,6 +192,16 @@ def build(applicationDir) {
 
 def allTests(applicationDir) {
 	stage ('Junit Test') { dir(applicationDir) {sh "mvn test -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}" }}
+}
+
+def processCodeCoverage(applicationDir) {
+	stage('Cobertura Code Coverage') {
+		dir(applicationDir) {
+			sh  "mvn cobertura:cobertura -Dcobertura.report.format=xml"
+			cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: '**/target/site/cobertura/*.xml',
+			failNoReports: false, failUnhealthy: false, failUnstable: false,  maxNumberOfBuilds: 0,
+			onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false}
+	}
 }
 
 def sonarScanner(applicationDir) {
