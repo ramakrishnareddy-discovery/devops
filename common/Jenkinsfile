@@ -1,6 +1,10 @@
 #!/usr/bin/env groovy
 @Library('JenkinsSharedLibrary') _
 
+// =========== GLOBAL VARS ===========
+def artifactName, releasedVersion
+// =========== GLOBAL VARS ===========
+
 node {
 	properties([
 		[$class: 'BuildDiscarderProperty', strategy:
@@ -26,18 +30,25 @@ node {
 		def applicationDir = "common"
 		
 		// =========== USER DEFINED VARS ===========
-
-		// TODO: MAJOR_VERSION AND MINOR_VERSION PENDING. Refer: http://blog.soebes.de/blog/2017/04/02/maven-pom-files-without-a-version-in-it/
-		// Append ${BUILD_NUMBER}
-		//${revision}
-		//currentBuild.displayName = "${artifactName}.${releasedVersion}"
-		//def releasedVersion = "${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}"
-
 		checkout(applicationDir, commonRepoUrl, GIT_BRANCH, utils)
+
+		// Since artifactName and releasedVersion fetching from POM.xml, should execute after cloning the repo.
+		artifactName = utils.getArtifact(applicationDir)
+
+		dir(applicationDir) {
+			releasedVersion = sh (
+					script: """ mvn help:evaluate -Dexpression=project.version -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER} | grep -e '^[^\\[]'  """,
+					returnStdout: true
+					).trim()
+		}
+		echo "releasedVersion: ${releasedVersion}"
+
+		currentBuild.displayName = "${artifactName}.${releasedVersion}"
+
 		build(applicationDir)
 		sonarScanner(applicationDir)
 		allCodeQualityTests(utils)
-		tagBranch(applicationDir, commonRepoUrl, GIT_TAG, utils)
+		tagBranch(applicationDir, commonRepoUrl, releasedVersion,GIT_TAG, utils)
 		subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
 		bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
 		utils.sendEmailNotification(subjectText, bodyText)
@@ -57,7 +68,7 @@ def checkout(applicationDir, commonRepoUrl, branchName, utils) {
 
 def build(applicationDir){
 	stage ('Maven Build') {
-		dir(applicationDir) { sh "mvn clean install -Dmaven.test.skip=true" }
+		dir(applicationDir) { sh "mvn clean install -Dmaven.test.skip=true -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}" }
 	}
 }
 
@@ -66,7 +77,7 @@ def sonarScanner(applicationDir) {
 	stage('SonarQube Analysis') {
 		dir(applicationDir) {
 			withSonarQubeEnv('SonarQube_V7') { // SonarQube taskId is automatically attached to the pipeline context
-				sh "mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.3.0.603:sonar" }
+				sh "mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.3.0.603:sonar -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}" }
 		}
 	}
 }
@@ -75,16 +86,11 @@ def allCodeQualityTests(utils) {
 	stage("SonarQube Quality Gate") { utils.processQualityGate() }
 }
 
-def tagBranch(applicationDir, commonRepoUrl, GIT_TAG, utils) {
+def tagBranch(applicationDir, commonRepoUrl, releasedVersion,GIT_TAG, utils) {
 	if (GIT_TAG.toBoolean()) {
 		stage('Tag Branch') {
-			//Fetching Released Version from POM.xml and appending BUILD_NUMBER
-			// TODO: MAJOR_VERSION AND MINOR_VERSION PENDING. Refer: http://blog.soebes.de/blog/2017/04/02/maven-pom-files-without-a-version-in-it/
-			// Append ${BUILD_NUMBER}
-			def taggedVersion = utils.getReleasedVersion(applicationDir) + ".${BUILD_NUMBER}"
-			echo "taggedVersion: ${taggedVersion}"
-
-			utils.tagBranch(applicationDir, commonRepoUrl, taggedVersion)
+			utils.tagBranch(applicationDir, commonRepoUrl, releasedVersion)
 		}
 	}
 }
+
