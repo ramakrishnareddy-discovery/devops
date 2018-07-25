@@ -20,7 +20,7 @@ node {
 			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not')
 		])
 	]
-	projectProperties.add(pipelineTriggers([upstream(threshold: hudson.model.Result.SUCCESS,upstreamProjects: "common")]))
+	//projectProperties.add(pipelineTriggers([upstream(threshold: hudson.model.Result.SUCCESS,upstreamProjects: "common")]))
 	properties(projectProperties)
 
 	Utils utils = new Utils()
