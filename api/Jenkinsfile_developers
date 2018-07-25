@@ -68,7 +68,8 @@ node {
 		allCodeQualityTests(utils)
 		utils.removeImages(artifactName)  // To clean images created on Jenkins BOX
 		dockerBuild()
-		saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils)
+		utils.pushImage(artifactName, releasedVersion)
+		//saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils)
 		tagBranch(applicationDir, apiRepoUrl, releasedVersion, GIT_TAG, utils)
 
 		for (String devServerIP : devServerIPString.split(",")) {
@@ -214,8 +215,10 @@ def dockerBuild() {
 			sh "mvn docker:build -Dv=${BUILD_NUMBER}"
 			echo "Docker Image Creation Complted..."
 		}
+		sh 'docker images'
 	}
 }
+
 
 def saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils) {
 	stage('Save Image to Tar Archive') {
