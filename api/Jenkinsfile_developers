@@ -42,6 +42,7 @@ node {
 		def devServerIPString = "${DEV_BOX_IP}"
 		qaReleaseCandidate = "${QA_RELEASE_CANDIDATE}"
 		qaServerIPString = "${QA_BOX_IP}"
+		def dockerRegistryIP = "10.0.31.225"
 		// =========== USER DEFINED VARS ===========
 
 		if (!devServerIPString?.trim()) {
@@ -69,7 +70,7 @@ node {
 		allCodeQualityTests(utils)
 		utils.removeImages(artifactName)  // To clean images created on Jenkins BOX
 		dockerBuild()
-		utils.pushImage(artifactName, releasedVersion)
+		utils.pushImage(artifactName, releasedVersion, dockerRegistryIP)
 		//saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils)  -- PART OF NORMAL FLOW
 		tagBranch(applicationDir, apiRepoUrl, releasedVersion, GIT_TAG, utils)
 
@@ -78,7 +79,7 @@ node {
 			//loadImage(distroDirPath, artifactName, releasedVersion, devServerIP, utils)				  -- PART OF NORMAL FLOW	
 			stage("deploy to DEV: ${devServerIP}"){
 				utils.stopContainer(artifactName, devServerIP)
-				deployImage(artifactName, releasedVersion, "dev", devServerIP, utils)
+				deployImage(artifactName, releasedVersion, "dev", devServerIP, utils, dockerRegistryIP)
 
 				subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' on ${devServerIP}"
 				bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}] on ${devServerIP}':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
@@ -259,8 +260,9 @@ def loadImage(distroDirPath, artifactName, releasedVersion, destinationIP, utils
 	//}
 }
 
-def deployImage(artifactName, releasedVersion, PROP_ENV, destinationIP, utils) {
-	utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP)
+def deployImage(artifactName, releasedVersion, PROP_ENV, destinationIP, utils, dockerRegistryIP) {
+	//utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP)
+	utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP, dockerRegistryIP)
 }
 
 
