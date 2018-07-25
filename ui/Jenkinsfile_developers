@@ -11,7 +11,8 @@ node {
 		disableConcurrentBuilds(),
 		parameters([
 			string(name: 'MAJOR_VERSION', description: '', defaultValue: "0", trim: true),
-			string(name: 'MINOR_VERSION', description: '', defaultValue: "SNAPSHOT", trim: true),
+			string(name: 'MINOR_VERSION', description: '', defaultValue: "snapshot", trim: true),
+			string(name: 'MINOR_VERSION', description: '', defaultValue: "", trim: true),
 			string(name: 'GIT_BRANCH', description: 'UI Branch Name', defaultValue: "develop", trim: true),
 			string(name: 'DEV_BOX_IP', description: 'Comma separated servers IP', defaultValue: "10.0.31.138", trim: true),
 			booleanParam(name: 'QA_RELEASE_CANDIDATE', defaultValue: false, description: 'Promote to QA or Not'),
@@ -44,6 +45,7 @@ node {
 		def devServerIPString = "${DEV_BOX_IP}"
 		qaReleaseCandidate = "${QA_RELEASE_CANDIDATE}"
 		qaServerIPString = "${QA_BOX_IP}"
+		def dockerRegistryIP = "10.0.31.225"
 		// =========== USER DEFINED VARS ===========
 
 		currentBuild.displayName = "${artifactName}.${releasedVersion}"
@@ -72,12 +74,16 @@ node {
 			utils.uiDockerBuild(applicationDir, artifactName, releasedVersion)
 		}
 
-		saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils)
+		//saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils)								 -- PART OF NORMAL FLOW
+		utils.pushImage(artifactName, releasedVersion, dockerRegistryIP)
+
+
 		tagBranch(applicationDir, uiRepoUrl, releasedVersion, GIT_TAG, utils)
 
 		for (String devServerIP : devServerIPString.split(",")) {
 			dockerClean(artifactName, devServerIP, utils)
-			loadImage(distroDirPath, artifactName, releasedVersion, devServerIP, utils)
+			//loadImage(distroDirPath, artifactName, releasedVersion, devServerIP, utils)												  -- PART OF NORMAL FLOW	
+
 			stage("deploy to DEV: ${devServerIP}"){
 				utils.stopContainer(artifactName, devServerIP)
 				deployImage(artifactName, releasedVersion, "dev", devServerIP, utils)
@@ -215,6 +221,7 @@ def loadImage(distroDirPath, artifactName, releasedVersion, destinationIP, utils
 }
 
 def deployImage(artifactName, releasedVersion, PROP_ENV, destinationIP, utils) {
+	//utils.promoteUIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP)
 	utils.promoteUIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP)
 }
 

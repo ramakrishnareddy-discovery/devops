@@ -70,8 +70,10 @@ node {
 		allCodeQualityTests(utils)
 		utils.removeImages(artifactName)  // To clean images created on Jenkins BOX
 		dockerBuild()
-		utils.pushImage(artifactName, releasedVersion, dockerRegistryIP)
+		
 		//saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils)  -- PART OF NORMAL FLOW
+		utils.pushImage(artifactName, releasedVersion, dockerRegistryIP)
+		
 		tagBranch(applicationDir, apiRepoUrl, releasedVersion, GIT_TAG, utils)
 
 		for (String devServerIP : devServerIPString.split(",")) {
@@ -261,7 +263,7 @@ def loadImage(distroDirPath, artifactName, releasedVersion, destinationIP, utils
 }
 
 def deployImage(artifactName, releasedVersion, PROP_ENV, destinationIP, utils, dockerRegistryIP) {
-	//utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP)
+	//utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP)									-- PART OF NORMAL FLOW	
 	utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP, dockerRegistryIP)
 }
 
