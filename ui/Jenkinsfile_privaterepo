@@ -2,7 +2,7 @@
 @Library('JenkinsSharedLibrary') _
 
 // =========== GLOBAL VARS ===========
-def artifactName, releasedVersion , qaServerIPString, distroDirPath, userApprovalQAInput, isQADeployApproved = true
+def artifactName, releasedVersion , qaServerIPString, distroDirPath, userApprovalQAInput, isQADeployApproved = true, dockerRegistryIP
 // =========== GLOBAL VARS ===========
 
 node {
@@ -45,7 +45,7 @@ node {
 		def devServerIPString = "${DEV_BOX_IP}"
 		qaReleaseCandidate = "${QA_RELEASE_CANDIDATE}"
 		qaServerIPString = "${QA_BOX_IP}"
-		def dockerRegistryIP ="${PRIVATE_REPO_IP}"
+		dockerRegistryIP ="${PRIVATE_REPO_IP}"
 		// =========== USER DEFINED VARS ===========
 
 		currentBuild.displayName = "${artifactName}.${releasedVersion}"
