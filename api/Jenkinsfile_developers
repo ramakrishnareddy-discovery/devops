@@ -69,7 +69,7 @@ node {
 		allCodeQualityTests(utils)
 		utils.removeImages(artifactName)  // To clean images created on Jenkins BOX
 		//dockerBuild()						-- CREATE IMAGE USING MAVEN GOAL		
-		dockerBuild(applicationDir, artifactName,  releasedVersion)
+		dockerBuild(applicationDir, artifactName,  releasedVersion, utils)
 		saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils)
 		tagBranch(applicationDir, apiRepoUrl, releasedVersion, GIT_TAG, utils)
 
@@ -218,7 +218,7 @@ def allCodeQualityTests(utils) {
 	stage("SonarQube Quality Gate") { utils.processQualityGate() }
 }
 
-def dockerBuild(applicationDir, artifactName,  releasedVersion) {
+def dockerBuild(applicationDir, artifactName,  releasedVersion, utils) {
 	stage('Docker Build'){
 		utils.apiDockerBuild(applicationDir, artifactName, releasedVersion)
 	}
