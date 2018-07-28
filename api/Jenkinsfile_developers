@@ -64,7 +64,7 @@ node {
 		currentBuild.displayName = "${artifactName}.${releasedVersion}"
 
 		build(applicationDir)
-		//allTests(applicationDir)
+		//allTests(applicationDir)																		-- MAVEN "default" LIFE CYCLE PHASE "package" ALREADY EXECUTES 'test' PHASE.
 		processCodeCoverage(applicationDir)
 		sonarScanner(applicationDir)
 		allCodeQualityTests(utils)
@@ -190,21 +190,14 @@ def checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUr
 
 def build(applicationDir) {
 	stage ('Maven Build') {
-		dir(applicationDir) { sh "mvn clean package -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}" }
-	}
-}
-
-/*
-def build(applicationDir) {
-	stage ('Maven Build') {
-		dir(applicationDir) { sh "mvn clean install -Dmaven.test.skip=true -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}" }
+		dir(applicationDir) { sh "mvn clean package -Dmaven.test.skip=true -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}" }
 	}
 }
 
 def allTests(applicationDir) {
 	stage ('Junit Test') { dir(applicationDir) {sh "mvn test -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}" }}
 }
-*/
+
 def processCodeCoverage(applicationDir) {
 	stage('Cobertura Code Coverage') {
 		dir(applicationDir) {
