@@ -21,7 +21,7 @@ node {
 			string(name: 'PROD_BOX_IP', description: 'comma separated servers IP', defaultValue: "~@ignore", trim: true)
 		]),
 	]
-	projectProperties.add(pipelineTriggers([upstream(threshold: hudson.model.Result.SUCCESS,upstreamProjects: "common")]))
+	//projectProperties.add(pipelineTriggers([upstream(threshold: hudson.model.Result.SUCCESS,upstreamProjects: "common")]))
 	properties(projectProperties)
 
 	Utils utils = new Utils()
