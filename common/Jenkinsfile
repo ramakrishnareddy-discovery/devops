@@ -14,6 +14,7 @@ node {
 			string(name: 'MAJOR_VERSION', description: '', defaultValue: "0", trim: true),
 			string(name: 'MINOR_VERSION', description: '', defaultValue: "SNAPSHOT", trim: true),
 			string(name: 'GIT_BRANCH', description: ' Branch Name', defaultValue: "feature/dev", trim: true),
+			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Save image to a tar archive'),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, 	description: 'Tagging required or not')
 		]),
 		//pipelineTriggers([ cron('H 6,11 * * *') ])
@@ -28,9 +29,14 @@ node {
 		def workspacePath = pwd()		
 		def commonRepoUrl = "ssh://git@innersource.accenture.com/appq/common.git"
 		def applicationDir = "common"
-		
+		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_common.git'
+
+		// "/product/jenkins" folder should exist and have jenkins user permissions.
+		distroDirPath =  "/product/jenkins/distro_common"
 		// =========== USER DEFINED VARS ===========
-		checkout(applicationDir, commonRepoUrl, GIT_BRANCH, utils)
+		checkout(applicationDir, GIT_BRANCH, commonRepoUrl, distroDirPath, distroRepoUrl, utils)
+		
+		//checkout(applicationDir, commonRepoUrl, GIT_BRANCH, utils)
 
 		// Since artifactName and releasedVersion fetching from POM.xml, should execute after cloning the repo.
 		artifactName = utils.getArtifact(applicationDir)
@@ -48,6 +54,7 @@ node {
 		build(applicationDir)
 		sonarScanner(applicationDir)
 		allCodeQualityTests(utils)
+		saveArtifact(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils)
 		tagBranch(applicationDir, commonRepoUrl, releasedVersion,GIT_TAG, utils)
 		subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
 		bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
@@ -64,6 +71,12 @@ node {
 
 def checkout(applicationDir, commonRepoUrl, branchName, utils) {
 	stage('Git Checkout') { utils.commonAppCheckout(applicationDir, commonRepoUrl, branchName) }
+}
+
+def checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl, utils) {
+	stage('Git Checkout') {
+		utils.sourceCodeCheckout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl)
+	}
 }
 
 def build(applicationDir){
@@ -84,6 +97,12 @@ def sonarScanner(applicationDir) {
 
 def allCodeQualityTests(utils) {
 	stage("SonarQube Quality Gate") { utils.processQualityGate() }
+}
+
+def saveArtifact(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils) {
+	stage('Save Artifact To Repo') {
+		utils.saveCommmonArtifact(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH)
+	}
 }
 
 def tagBranch(applicationDir, commonRepoUrl, releasedVersion,GIT_TAG, utils) {
