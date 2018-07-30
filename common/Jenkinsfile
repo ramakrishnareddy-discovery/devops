@@ -12,7 +12,7 @@ node {
 		disableConcurrentBuilds(),
 		parameters([
 			string(name: 'MAJOR_VERSION', description: '', defaultValue: "0", trim: true),
-			string(name: 'MINOR_VERSION', description: '', defaultValue: "SNAPSHOT", trim: true),
+			string(name: 'MINOR_VERSION', description: '', defaultValue: "snapshot", trim: true),
 			string(name: 'GIT_BRANCH', description: ' Branch Name', defaultValue: "feature/dev", trim: true),
 			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Save image to a tar archive'),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, 	description: 'Tagging required or not')
