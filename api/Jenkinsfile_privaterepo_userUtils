@@ -5,6 +5,11 @@
 def artifactName, releasedVersion , qaServerIPString, distroDirPath,  userApprovalQAInput, qaReleaseCandidate, isQADeployApproved = true, dockerRegistryIP
 // =========== GLOBAL VARS ===========
 
+
+/*
+10.0.31.138 - DEV SERVER
+10.0.31.245(offshore-chef-workstation-new)
+*/
 node {
 	def projectProperties = [
 		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '3']],
@@ -13,9 +18,9 @@ node {
 			string(name: 'MAJOR_VERSION', description: '', defaultValue: "0", trim: true),
 			string(name: 'MINOR_VERSION', description: '', defaultValue: "snapshot", trim: true),
 			string(name: 'GIT_BRANCH', description: 'API Branch Name', defaultValue: "feature/dev",trim: true),
-			string(name: 'DEV_BOX_IP', description: 'comma separated servers IP', defaultValue: "10.0.31.138", trim: true),
+			string(name: 'DEV_BOX_IP', description: 'comma separated servers IP', defaultValue: "10.0.31.245", trim: true),
 			booleanParam(name: 'QA_RELEASE_CANDIDATE', defaultValue: false, description: 'Promote to QA or Not'),
-			string(name: 'QA_BOX_IP', description: 'comma separated servers IP', defaultValue: "10.0.31.242", trim: true),
+			string(name: 'QA_BOX_IP', description: 'comma separated servers IP', defaultValue: "", trim: true),
 			string(name: 'PRIVATE_REPO_IP', description: 'Docker Images Private Repo', defaultValue: "10.0.31.225", trim: true),
 			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false, description: 'Save image to a tar archive'),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not')
