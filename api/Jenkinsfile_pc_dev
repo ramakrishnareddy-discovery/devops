@@ -1,0 +1,239 @@
+#!/usr/bin/env groovy
+@Library('JenkinsSharedLibrary') _
+
+// =========== GLOBAL VARS ===========
+def artifactName, releasedVersion, distroDirPath, dockerRegistryIP
+// =========== GLOBAL VARS ===========
+
+node {
+	def projectProperties = [
+		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '3']],
+		disableConcurrentBuilds(),
+		parameters([
+			string(name: 'MAJOR_VERSION', description: '', defaultValue: "0", trim: true),
+			string(name: 'MINOR_VERSION', description: '', defaultValue: "snapshot", trim: true),
+			string(name: 'GIT_BRANCH', description: 'PriorityConfig Branch Name', defaultValue: "feature/dev",trim: true),
+			string(name: 'DEV_BOX_IP', description: 'comma separated servers IP', defaultValue: "10.0.31.138", trim: true),
+			string(name: 'PRIVATE_REPO_IP', description: 'Docker Images Private Repo', defaultValue: "10.0.31.225", trim: true),
+			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false, description: 'Save image to a tar archive'),
+			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not')
+		])
+	]
+	//projectProperties.add(pipelineTriggers([upstream(threshold: hudson.model.Result.SUCCESS,upstreamProjects: "common")]))
+	properties(projectProperties)
+
+	Utils utils = new Utils()
+	try {
+		// =========== USER DEFINED VARS ===========
+		def workspacePath = pwd()
+		echo "workspacePath: ${workspacePath}"
+
+		def mvnHome = tool name: "Maven_V3"
+		env.PATH = "${mvnHome}/bin:${env.PATH}"
+
+		def priorityConfigRepoUrl = 'ssh://git@innersource.accenture.com/appq/priorityconfig.git'
+		def priorityConfigDistroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_api_pc.git'
+
+		// TODO: change the /product folder accordingly
+		// "/product/jenkins" folder should exist and have jenkins user permissions.
+		distroDirPath =  "/product/jenkins/distro_api" //"/tmp/jenkins/distro_api" //"/product/jenkins/lib/distro_api"
+
+		def applicationDir = "priorityconfig"
+		def devServerIPString = "${DEV_BOX_IP}"
+		dockerRegistryIP ="${PRIVATE_REPO_IP}"
+		// =========== USER DEFINED VARS ===========
+
+		if (!devServerIPString?.trim()) {
+			error "Missing DEV server IP in Build Parameters"
+		}
+
+		checkout(applicationDir, GIT_BRANCH, priorityConfigRepoUrl, distroDirPath, priorityConfigDistroRepoUrl, utils)
+		// Since artifactName and releasedVersion fetching from POM.xml, should execute after cloning the repo.
+		artifactName = utils.getArtifact(applicationDir)
+
+		dir(applicationDir) {
+			releasedVersion = sh (
+					script: """ mvn help:evaluate -Dexpression=project.version -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER} | grep -e '^[^\\[]'  """,
+					returnStdout: true
+					).trim()
+		}
+		echo "releasedVersion: ${releasedVersion}"
+
+		currentBuild.displayName = "${artifactName}.${releasedVersion}"
+
+		build(applicationDir)
+		allTests(applicationDir)
+		processCodeCoverage(applicationDir)
+		sonarScanner(applicationDir)
+		allCodeQualityTests(utils)
+		utils.removeImages(artifactName)  																// To clean images created on Jenkins BOX
+		//dockerBuild()																					-- CREATE IMAGE USING MAVEN GOAL		
+		dockerBuild(applicationDir, artifactName,  releasedVersion, utils)
+		saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils)
+		
+		utils.pushImage(artifactName, releasedVersion, dockerRegistryIP)             					// Push Image to Private Repository
+
+		tagBranch(applicationDir, priorityConfigRepoUrl, releasedVersion, GIT_TAG, utils)
+
+		for (String devServerIP : devServerIPString.split(",")) {
+			dockerClean(artifactName, devServerIP, utils)
+			//loadImage(distroDirPath, artifactName, releasedVersion, devServerIP, utils)				// If PRIVATE REPO is down, Please uncomment this line to fetch images from GIT REPO
+			stage("deploy to DEV: ${devServerIP}"){
+				utils.stopContainer(artifactName, devServerIP)
+				//deployImage(artifactName, releasedVersion, "dev", devServerIP, utils)					// If PRIVATE REPO is down, Please uncomment this line to deploy local image
+				deployImage(artifactName, releasedVersion, "dev", devServerIP, utils, dockerRegistryIP)
+				subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' on ${devServerIP}"
+				bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}] on ${devServerIP}':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
+				utils.sendEmailNotification(subjectText, bodyText)
+			}
+		}
+
+	}catch (error) {
+		println error
+		// If there was an exception thrown, the build failed
+		// currentBuild.result = 'FAILURE'
+		subjectText = "JENKINS Notification: FAILED Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
+		bodyText = """ <p>FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
+		utils.sendEmailNotification(subjectText, bodyText)
+		throw error
+	}
+}
+
+//--------------------------------------------------------- Utility Methods START ---------------------------------------------------------
+
+def checkout(applicationDir, branchName, priorityConfigRepoUrl, distroDirPath, priorityConfigDistroRepoUrl, utils) {
+	stage('Git Checkout') {
+		utils.sourceCodeCheckout(applicationDir, branchName, priorityConfigRepoUrl, distroDirPath, priorityConfigDistroRepoUrl)
+	}
+}
+
+def build(applicationDir) {
+	stage ('Maven Build') {
+		dir(applicationDir) { sh "mvn clean install -Dmaven.test.skip=true -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}" }
+	}
+}
+
+def allTests(applicationDir) {
+	stage ('Junit Test') { dir(applicationDir) {sh "mvn test -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}" }}
+}
+
+def processCodeCoverage(applicationDir) {
+	stage('Cobertura Code Coverage') {
+		dir(applicationDir) {
+			sh  "mvn cobertura:cobertura -Dcobertura.report.format=xml -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}"
+			cobertura autoUpdateHealth: false, autoUpdateStability: false, coberturaReportFile: '**/target/site/cobertura/*.xml',
+			failNoReports: false, failUnhealthy: false, failUnstable: false,  maxNumberOfBuilds: 0,
+			onlyStable: false, sourceEncoding: 'ASCII', zoomCoverageChart: false}
+	}
+}
+
+def sonarScanner(applicationDir) {
+	stage('SonarQube Analysis') {
+		dir(applicationDir) {
+			withSonarQubeEnv('SonarQube_V7') { // SonarQube taskId is automatically attached to the pipeline context
+				sh "mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.3.0.603:sonar -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}" }
+		}
+	}
+}
+
+def allCodeQualityTests(utils) {
+	stage("SonarQube Quality Gate") { utils.processQualityGate() }
+}
+
+def dockerBuild(applicationDir, artifactName,  releasedVersion, utils) {
+	stage('Docker Build'){
+		utils.apiDockerBuild(applicationDir, artifactName, releasedVersion)
+	}
+}
+
+def dockerBuild() {
+	stage('Docker Build'){
+		dir('demandplannerapi') {
+			echo "Starting Docker Image Creation..."
+			sh "mvn docker:build -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}"
+			echo "Docker Image Creation Complted..."
+			sh "docker images"
+		}
+		
+	}
+}
+
+def saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils) {
+	stage('Save Image to Tar Archive') {
+		utils.saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH)
+	}
+}
+
+
+def tagBranch(applicationDir, priorityConfigRepoUrl, releasedVersion,GIT_TAG, utils) {
+	if (GIT_TAG.toBoolean()) {
+		stage('Tag Branch') {
+			utils.tagBranch(applicationDir, priorityConfigRepoUrl, releasedVersion)
+		}
+		sh "docker images"
+	}
+}
+
+def dockerClean(artifactName, serverIP, utils) {
+	//stage('Docker Clean'){
+	utils.removeDanglingImages(artifactName, serverIP)
+	//}
+}
+
+def loadImage(distroDirPath, artifactName, releasedVersion, destinationIP, utils) {
+	//stage('load Image'){
+	utils.loadImage(distroDirPath, artifactName, releasedVersion, destinationIP)
+	//}
+}
+
+def deployImage(artifactName, releasedVersion, PROP_ENV, destinationIP, utils) {
+	utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP)
+}
+
+def deployImage(artifactName, releasedVersion, PROP_ENV, destinationIP, utils, dockerRegistryIP) {
+	utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP, dockerRegistryIP)
+}
+
+// Assuming jenkins box is Dev BOX and deploying application to local box
+def deployToDev(artifactName, releasedVersion, PROP_ENV, utils) {
+	stage('deploy to DEV'){
+		utils.deployAPIToDev(artifactName, releasedVersion, PROP_ENV)
+	}
+}
+
+
+/*
+ // This  method add an input step with timeout that continues if timeout is reached using a default value.
+ stage('deploy to QA'){
+ userAborted = false
+ startMillis = System.currentTimeMillis()
+ timeoutMillis = 10000
+ try {
+ timeout(time: timeoutMillis, unit: 'MILLISECONDS') {
+ input 'Do you approve?'
+ }
+ } catch (org.jenkinsci.plugins.workflow.steps.FlowInterruptedException e) {
+ cause = e.causes.get(0)
+ echo "Aborted by " + cause.getUser().toString()
+ if (cause.getUser().toString() != 'SYSTEM') {
+ startMillis = System.currentTimeMillis()
+ } else {
+ endMillis = System.currentTimeMillis()
+ if (endMillis - startMillis >= timeoutMillis) {
+ echo "Approval timed out. Continuing with deployment."
+ } else {
+ userAborted = true
+ echo "SYSTEM aborted, but looks like timeout period didn't complete. Aborting."
+ }
+ }
+ }
+ if (userAborted) {
+ currentBuild.result = 'ABORTED'
+ } else {
+ currentBuild.result = 'SUCCESS'
+ utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP)
+ }
+ }
+ */
+
+//--------------------------------------------------------- Utility Methods END ---------------------------------------------------------
