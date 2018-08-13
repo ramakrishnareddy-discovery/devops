@@ -26,6 +26,7 @@ node {
 		def mvnHome = tool name: "Maven_V3"
 		env.PATH = "${mvnHome}/bin:${env.PATH}"
 
+		echo "mvnPath:${env.PATH}"
 		def workspacePath = pwd()		
 		def commonRepoUrl = "ssh://git@innersource.accenture.com/appq/common.git"
 		def applicationDir = "common"
