@@ -15,7 +15,6 @@ node {
 			string(name: 'GIT_BRANCH', description: 'API Branch Name', defaultValue: "feature/dev",trim: true),
 			string(name: 'DEV_BOX_IP', description: 'comma separated servers IP', defaultValue: "10.0.31.138", trim: true),
 			string(name: 'PRIVATE_REPO_IP', description: 'Docker Images Private Repo', defaultValue: "10.0.31.225", trim: true),
-			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not')
 		])
 	]
 	//projectProperties.add(pipelineTriggers([upstream(threshold: hudson.model.Result.SUCCESS,upstreamProjects: "common")]))
@@ -62,7 +61,6 @@ node {
 		utils.removeImages(artifactName)  																// To clean images created on Jenkins BOX
 		dockerBuild(applicationDir, artifactName,  releasedVersion, utils)
 		utils.pushImage(artifactName, releasedVersion, dockerRegistryIP)             					// Push Image to Private Repository
-		tagBranch(applicationDir, apiRepoUrl, releasedVersion, GIT_TAG, utils)
 
 		for (String devServerIP : devServerIPString.split(",")) {
 			dockerClean(artifactName, devServerIP, utils)
@@ -122,15 +120,6 @@ def allCodeQualityTests(utils) {
 def dockerBuild(applicationDir, artifactName,  releasedVersion, utils) {
 	stage('Docker Build'){
 		utils.apiDockerBuild(applicationDir, artifactName, releasedVersion)
-	}
-}
-
-def tagBranch(applicationDir, apiRepoUrl, releasedVersion,GIT_TAG, utils) {
-	if (GIT_TAG.toBoolean()) {
-		stage('Tag Branch') {
-			utils.tagBranch(applicationDir, apiRepoUrl, releasedVersion)
-		}
-		sh "docker images"
 	}
 }
 
