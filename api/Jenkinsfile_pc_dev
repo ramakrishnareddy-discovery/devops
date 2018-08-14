@@ -144,6 +144,6 @@ def dockerClean(artifactName, serverIP, utils) {
 }
 
 def deployImage(artifactName, releasedVersion, PROP_ENV, destinationIP, utils, dockerRegistryIP) {
-	utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP, dockerRegistryIP)
+	utils.promotePCAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP, dockerRegistryIP)
 }
 //--------------------------------------------------------- Utility Methods END ---------------------------------------------------------
