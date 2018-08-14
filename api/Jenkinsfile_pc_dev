@@ -56,8 +56,8 @@ node {
 
 		currentBuild.displayName = "${artifactName}.${releasedVersion}"
 
-		build(applicationDir)
-		allTests(applicationDir)
+		build(applicationDir, releasedVersion)
+		allTests(applicationDir, releasedVersion)
 		processCodeCoverage(applicationDir, releasedVersion, utils)
 		sonarScanner(applicationDir, releasedVersion, utils)
 		allCodeQualityTests(utils)
@@ -95,14 +95,14 @@ def checkout(applicationDir, branchName, priorityConfigRepoUrl, utils) {
 	}
 }
 
-def build(applicationDir) {
+def build(applicationDir, releasedVersion) {
 	stage ('Maven Build') {
-		dir(applicationDir) { sh "mvn clean install -Dmaven.test.skip=true -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}" }
+		dir(applicationDir) { sh "mvn clean install -Dmaven.test.skip=true -Drevision=${releasedVersion}" }
 	}
 }
 
-def allTests(applicationDir) {
-	stage ('Junit Test') { dir(applicationDir) {sh "mvn test -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}" }}
+def allTests(applicationDir, releasedVersion) {
+	stage ('Junit Test') { dir(applicationDir) {sh "mvn test -Drevision=${releasedVersion}" }}
 }
 
 def processCodeCoverage(applicationDir, releasedVersion, utils) {
