@@ -15,7 +15,6 @@ node {
 			string(name: 'GIT_BRANCH', description: 'PriorityConfig Branch Name', defaultValue: "feature/dev",trim: true),
 			string(name: 'DEV_BOX_IP', description: 'comma separated servers IP', defaultValue: "10.0.31.138", trim: true),
 			string(name: 'PRIVATE_REPO_IP', description: 'Docker Images Private Repo', defaultValue: "10.0.31.225", trim: true),
-			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false, description: 'Save image to a tar archive'),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not')
 		])
 	]
@@ -59,8 +58,8 @@ node {
 
 		build(applicationDir)
 		allTests(applicationDir)
-		processCodeCoverage(applicationDir, releasedVersion)
-		sonarScanner(applicationDir, releasedVersion)
+		processCodeCoverage(applicationDir, releasedVersion, utils)
+		sonarScanner(applicationDir, releasedVersion, utils)
 		allCodeQualityTests(utils)
 		utils.removeImages(artifactName)  																// To clean images created on Jenkins BOX
 		dockerBuild(applicationDir, artifactName,  releasedVersion, utils)
@@ -106,14 +105,14 @@ def allTests(applicationDir) {
 	stage ('Junit Test') { dir(applicationDir) {sh "mvn test -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}" }}
 }
 
-def processCodeCoverage(applicationDir, releasedVersion) {
+def processCodeCoverage(applicationDir, releasedVersion, utils) {
 	stage('Cobertura Code Coverage') {
 		utils.processCodeCoverage(applicationDir, releasedVersion)
 		
 	}
 }
 
-def sonarScanner(applicationDir, releasedVersion) {
+def sonarScanner(applicationDir, releasedVersion, utils) {
 	stage('SonarQube Analysis') {
 		utils.sonarScanner(applicationDir, releasedVersion)
 	}
