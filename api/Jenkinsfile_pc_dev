@@ -31,7 +31,7 @@ node {
 		def mvnHome = tool name: "Maven_V3"
 		env.PATH = "${mvnHome}/bin:${env.PATH}"
 
-		def priorityConfigRepoUrl = 'ssh://git@innersource.accenture.com/appq/priorityconfig.git'
+		def priorityConfigRepoUrl = 'ssh://git@innersource.accenture.com/appq/priorityconfigapi.git'
 		def priorityConfigDistroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_api_pc.git'
 
 		// TODO: change the /product folder accordingly
@@ -69,7 +69,7 @@ node {
 		utils.removeImages(artifactName)  																// To clean images created on Jenkins BOX
 		//dockerBuild()																					-- CREATE IMAGE USING MAVEN GOAL		
 		dockerBuild(applicationDir, artifactName,  releasedVersion, utils)
-		saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils)
+		//saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils) // If PRIVATE REPO is down, Please uncomment this line to save docker image tar file to REPO
 		
 		utils.pushImage(artifactName, releasedVersion, dockerRegistryIP)             					// Push Image to Private Repository
 
@@ -103,7 +103,8 @@ node {
 
 def checkout(applicationDir, branchName, priorityConfigRepoUrl, distroDirPath, priorityConfigDistroRepoUrl, utils) {
 	stage('Git Checkout') {
-		utils.sourceCodeCheckout(applicationDir, branchName, priorityConfigRepoUrl, distroDirPath, priorityConfigDistroRepoUrl)
+		//utils.sourceCodeCheckout(applicationDir, branchName, priorityConfigRepoUrl, distroDirPath, priorityConfigDistroRepoUrl)
+		utils.sourceCodeCheckout(applicationDir, branchName, priorityConfigRepoUrl)
 	}
 }
 
