@@ -10,8 +10,8 @@ node {
 		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '3']],
 		disableConcurrentBuilds(),
 		parameters([
-			string(name: 'MAJOR_VERSION', description: '', defaultValue: "0", trim: true),
-			string(name: 'MINOR_VERSION', description: '', defaultValue: "snapshot", trim: true),
+			//string(name: 'MAJOR_VERSION', description: '', defaultValue: "0", trim: true),
+			//string(name: 'MINOR_VERSION', description: '', defaultValue: "snapshot", trim: true),
 			string(name: 'GIT_BRANCH', description: 'API Branch Name', defaultValue: "feature/dev",trim: true),
 			string(name: 'DEV_BOX_IP', description: 'comma separated servers IP', defaultValue: "10.0.31.138", trim: true),
 			string(name: 'PRIVATE_REPO_IP', description: 'Docker Images Private Repo', defaultValue: "10.0.31.225", trim: true)
@@ -43,14 +43,18 @@ node {
 		// Since artifactName and releasedVersion fetching from POM.xml, should execute after cloning the repo.
 		artifactName = utils.getArtifact(applicationDir)
 
-		dir(applicationDir) {
-			releasedVersion = sh (
-					script: """ mvn help:evaluate -Dexpression=project.version -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER} | grep -e '^[^\\[]'  """,
-					returnStdout: true
-					).trim()
-		}
+		// Keep below code for future purpose
+		/*
+			dir(applicationDir) {
+				releasedVersion = sh (
+						script: """ mvn help:evaluate -Dexpression=project.version -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER} | grep -e '^[^\\[]'  """,
+						returnStdout: true
+						).trim()
+			}
 		echo "releasedVersion: ${releasedVersion}"
+		*/
 
+		releasedVersion = "0.snapshot.${BUILD_NUMBER}"
 		currentBuild.displayName = "${artifactName}.${releasedVersion}"
 
 		build(applicationDir, releasedVersion)
@@ -72,7 +76,6 @@ node {
 				utils.sendEmailNotification(subjectText, bodyText)
 			}
 		}
-
 	}catch (error) {
 		println error
 		// If there was an exception thrown, the build failed

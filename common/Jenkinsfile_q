@@ -31,6 +31,7 @@ node {
 		// Since artifactName and releasedVersion fetching from POM.xml, should execute after cloning the repo.
 		def artifactName = utils.getArtifact(applicationDir)
 
+		// Keep below code for future purpose
 		/*
 			dir(applicationDir) {
 				releasedVersion = sh (
