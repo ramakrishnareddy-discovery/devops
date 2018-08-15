@@ -27,7 +27,7 @@ node {
 		env.PATH = "${mvnHome}/bin:${env.PATH}"
 
 		echo "mvnPath:${env.PATH}"
-		def workspacePath = pwd()		
+		def workspacePath = pwd()
 		def commonRepoUrl = "ssh://git@innersource.accenture.com/appq/common.git"
 		def applicationDir = "common"
 		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_common.git'
@@ -36,7 +36,7 @@ node {
 		distroDirPath =  "/product/jenkins/distro_common"
 		// =========== USER DEFINED VARS ===========
 		checkout(applicationDir, GIT_BRANCH, commonRepoUrl, distroDirPath, distroRepoUrl, utils)
-		
+
 		//checkout(applicationDir, commonRepoUrl, GIT_BRANCH, utils)
 
 		// Since artifactName and releasedVersion fetching from POM.xml, should execute after cloning the repo.
@@ -67,7 +67,7 @@ node {
 		subjectText = "JENKINS Notification : FAILED Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
 		bodyText = """ <p>FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
 		utils.sendEmailNotification(subjectText, bodyText)
-	} 
+	}
 }
 
 def checkout(applicationDir, commonRepoUrl, branchName, utils) {

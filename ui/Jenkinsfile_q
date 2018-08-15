@@ -124,7 +124,7 @@ try {
 		userApprovalQAInput = input(
 				id: 'userInput', message: 'Are you prepared to deploy?', parameters: [[$class: 'ChoiceParameterDefinition', choices: deployOptions, description: 'Approve/Disallow deployment', name: 'deploy-check']])
 		echo "userApprovalQAInput: ${userApprovalQAInput}"
-	
+
 
 		if (qaReleaseCandidate.toBoolean() && userApprovalQAInput == 'yes') {
 			echo "${releasedVersion} got secondary approval for QA Release."
@@ -132,7 +132,7 @@ try {
 			echo "${releasedVersion} didn't get secondary approval for QA Release."
 			error 'FAIL'    // Fails the Stage
 		}
-	}	
+	}
 } catch(error) {
 	//currentBuild.result = 'UNSTABLE'
 	echo "Exception: ${error}"
@@ -154,9 +154,9 @@ if (isQADeployApproved) {
 			echo "qaServerIPString: ${qaServerIPString}"
 
 			if (!qaServerIPString?.trim()) {
-					error "Missing QA server IP in Build Parameters"
+				error "Missing QA server IP in Build Parameters"
 			}
-			
+
 			for (String qaServerIP : qaServerIPString.split(",")) {
 				stage("deploy to QA: ${qaServerIP}") {
 					dockerClean(artifactName, qaServerIP, utils)

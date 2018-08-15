@@ -20,7 +20,7 @@ node {
 		env.PATH = "${mvnHome}/bin:${env.PATH}"
 
 		echo "mvnPath:${env.PATH}"
-		def workspacePath = pwd()		
+		def workspacePath = pwd()
 		def commonRepoUrl = "ssh://git@innersource.accenture.com/appq/common.git"
 		def applicationDir = "common"
 		def releasedVersion
@@ -33,15 +33,15 @@ node {
 
 		// Keep below code for future purpose
 		/*
-			dir(applicationDir) {
-				releasedVersion = sh (
-						script: """ mvn help:evaluate -Dexpression=project.version -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER} | grep -e '^[^\\[]'  """,
-						returnStdout: true
-						).trim()
-			}
-		echo "releasedVersion: ${releasedVersion}"
-		*/
-		
+		 dir(applicationDir) {
+		 releasedVersion = sh (
+		 script: """ mvn help:evaluate -Dexpression=project.version -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER} | grep -e '^[^\\[]'  """,
+		 returnStdout: true
+		 ).trim()
+		 }
+		 echo "releasedVersion: ${releasedVersion}"
+		 */
+
 		releasedVersion = "1.0.1"
 		currentBuild.displayName = "${artifactName}.${releasedVersion}"
 
@@ -59,7 +59,7 @@ node {
 		subjectText = "JENKINS Notification : FAILED Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
 		bodyText = """ <p>FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
 		utils.sendEmailNotification(subjectText, bodyText)
-	} 
+	}
 }
 
 def checkout(applicationDir, branchName, commonRepoUrl, utils) {

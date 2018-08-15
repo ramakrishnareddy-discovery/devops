@@ -47,14 +47,14 @@ node {
 
 		// Keep below code for future purpose
 		/*
-			dir(applicationDir) {
-				releasedVersion = sh (
-						script: """ mvn help:evaluate -Dexpression=project.version -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER} | grep -e '^[^\\[]'  """,
-						returnStdout: true
-						).trim()
-			}
-		echo "releasedVersion: ${releasedVersion}"
-		*/
+		 dir(applicationDir) {
+		 releasedVersion = sh (
+		 script: """ mvn help:evaluate -Dexpression=project.version -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER} | grep -e '^[^\\[]'  """,
+		 returnStdout: true
+		 ).trim()
+		 }
+		 echo "releasedVersion: ${releasedVersion}"
+		 */
 
 		releasedVersion = "0.snapshot.${BUILD_NUMBER}"
 		currentBuild.displayName = "${artifactName}.${releasedVersion}"
@@ -110,7 +110,7 @@ def allTests(applicationDir, releasedVersion) {
 def processCodeCoverage(applicationDir, releasedVersion, utils) {
 	stage('Cobertura Code Coverage') {
 		utils.processCodeCoverage(applicationDir, releasedVersion)
-		
+
 	}
 }
 

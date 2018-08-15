@@ -190,7 +190,7 @@ def processCodeCoverage(applicationDir, releasedVersion, utils) {
 
 def sonarScanner(applicationDir, releasedVersion, utils) {
 	stage('SonarQube Analysis') {
-			utils.sonarScanner(applicationDir, releasedVersion)
+		utils.sonarScanner(applicationDir, releasedVersion)
 	}
 }
 
