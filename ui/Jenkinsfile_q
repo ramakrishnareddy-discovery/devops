@@ -17,7 +17,6 @@ node {
 			booleanParam(name: 'QA_RELEASE_CANDIDATE', defaultValue: false, description: 'Promote to QA or Not'),
 			string(name: 'QA_BOX_IP', description: 'Comma separated servers IP', defaultValue: "10.0.31.242", trim: true),
 			string(name: 'PRIVATE_REPO_IP', description: 'Docker Images Private Repo', defaultValue: "10.0.31.225", trim: true),
-			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false, description: 'Save image to a tar archive'),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not')
 		])
 	]
