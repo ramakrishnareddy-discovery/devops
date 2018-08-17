@@ -63,14 +63,12 @@ node {
 
 		stage("SonarQube Quality Gate") { utils.processQualityGate() }
 
-		utils.removeImages(artifactName)  																		// To clean images created on Jenkins BOX
-
 		stage('Docker Build') {
 			utils.uiDockerBuild(applicationDir, artifactName, releasedVersion)
 		}
 
 		utils.pushImage(artifactName, releasedVersion, dockerRegistryIP)										// Push Image to Private Repository
-
+		utils.removeImages(artifactName)  																		// To clean images created on Jenkins BOX
 		tagBranch(applicationDir, uiRepoUrl, releasedVersion, GIT_TAG, utils)
 
 		for (String devServerIP : devServerIPString.split(",")) {
@@ -158,9 +156,9 @@ if (isQADeployApproved) {
 
 			for (String qaServerIP : qaServerIPString.split(",")) {
 				stage("deploy to QA: ${qaServerIP}") {
-					dockerClean(artifactName, qaServerIP, utils)
 					utils.stopContainer(artifactName, qaServerIP)
 					deployImage(artifactName, releasedVersion, "qa", qaServerIP, utils, dockerRegistryIP)
+					dockerClean(artifactName, qaServerIP, utils)												//To clean images created on QA BOX
 					subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' on ${qaServerIP}"
 					bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}] on ${qaServerIP}':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
 					utils.sendEmailNotification(subjectText, bodyText)
