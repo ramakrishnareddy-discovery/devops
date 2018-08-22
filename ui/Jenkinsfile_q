@@ -115,6 +115,7 @@ if (qaReleaseCandidate.toBoolean()) {
 
 //--------------------------------------------------------- QA  SECONDARY APPROVAL CHECK BEGIN ---------------------------------------------------------
 //Show a Jenkins pipeline stage as failed without failing the whole job
+/*
 try {
 	stage('Deploy Approval - QA') {
 		def deployOptions = 'no\nyes'
@@ -136,6 +137,7 @@ try {
 	echo "currentBuild.result: ${currentBuild.result}"
 	isQADeployApproved = false
 }
+*/
 //--------------------------------------------------------- QA SECONDARY APPROVAL CHECK END ---------------------------------------------------------
 
 
