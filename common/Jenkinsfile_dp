@@ -42,7 +42,7 @@ node {
 		 echo "releasedVersion: ${releasedVersion}"
 		 */
 
-		releasedVersion = "1.0.1"
+		releasedVersion = "2.0.0"
 		currentBuild.displayName = "${artifactName}.${releasedVersion}"
 
 		build(applicationDir, releasedVersion)
