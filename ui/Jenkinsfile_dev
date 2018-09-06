@@ -55,7 +55,7 @@ node {
 			utils.npmBuild('demandplannerui_npmbuild', branchName, uiRepoUrl)
 		}
 
-		stage('SonarQube Analysis') { utils.uiCodeQualityAnalysis('demandplannerui_npmbuild') }
+		stage('SonarQube Analysis') { utils.uiCodeQualityAnalysis('demandplannerui_npmbuild', releasedVersion) }
 
 		stage("SonarQube Quality Gate") { utils.processQualityGate() }
 
