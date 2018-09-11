@@ -13,6 +13,7 @@ node {
 			//string(name: 'MAJOR_VERSION', description: '', defaultValue: "0", trim: true),
 			//string(name: 'MINOR_VERSION', description: '', defaultValue: "snapshot", trim: true),
 			string(name: 'GIT_BRANCH', description: 'UI Branch Name', defaultValue: "develop", trim: true),
+			choice(name: 'PROP_ENV',choices: ["dev", "dev2", "qa"].join("\n"), description: 'Environment To Deploy'),
 			string(name: 'DEV_BOX_IP', description: 'Comma separated servers IP', defaultValue: "10.0.3.32", trim: true),
 			string(name: 'PRIVATE_REPO_IP', description: 'Docker Images Private Repo', defaultValue: "10.0.31.225", trim: true)
 		])
@@ -69,7 +70,7 @@ node {
 			stage("deploy to DEV: ${devServerIP}"){
 				utils.stopContainer(artifactName, devServerIP)
 				dockerClean(artifactName, devServerIP, utils)													// To clean images created on DEV BOX
-				deployImage(artifactName, releasedVersion, "dev", devServerIP, utils, dockerRegistryIP)
+				deployImage(artifactName, releasedVersion, "${PROP_ENV}", devServerIP, utils, dockerRegistryIP)
 				subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' on ${devServerIP}"
 				bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}] on ${devServerIP}':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
 				utils.sendEmailNotification(subjectText, bodyText)
