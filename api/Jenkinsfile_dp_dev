@@ -21,12 +21,6 @@ node {
 	//projectProperties.add(pipelineTriggers([upstream(threshold: hudson.model.Result.SUCCESS,upstreamProjects: "common")]))
 	properties(projectProperties)
 
-
-properties(
-    [parameters([choice(choices: ["A", "B", "C"].join("\n"),
-    description: 'Some choice parameter', 
-    name: 'SOME_CHOICE')])])
-
 	Utils utils = new Utils()
 	try {
 		// =========== USER DEFINED VARS ===========
