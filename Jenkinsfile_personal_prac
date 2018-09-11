@@ -174,7 +174,7 @@ def checkout(applicationDir, branchName, apiRepoUrl, utils) {
 		dir(applicationDir) {
 		git branch: "${branchName}",
 		credentialsId: 'github-repo-access',
-		url: "${repoUrl}"
+		url: "${apiRepoUrl}"
 	}
 	}
 }
