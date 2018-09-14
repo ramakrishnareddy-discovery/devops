@@ -29,7 +29,8 @@ node {
 		def workspacePath = pwd()
 		def nodeHome = tool 'NodeJS_V8'
 		env.PATH="${env.PATH}:${nodeHome}/bin"
-		def uiRepoUrl = 'ssh://git@innersource.accenture.com/appq/demandplannerui.git'
+		//def uiRepoUrl = 'ssh://git@innersource.accenture.com/appq/demandplannerui.git'
+		def uiRepoUrl = 'https://r.satti@innersource.accenture.com/scm/appq/demandplannerui.git'
 
 		def artifactName = 'demandplannerui'
 		def applicationDir = 'demandplannerui'

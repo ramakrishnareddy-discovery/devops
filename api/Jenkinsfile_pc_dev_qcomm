@@ -30,8 +30,8 @@ node {
 		def mvnHome = tool name: "Maven_V3"
 		env.PATH = "${mvnHome}/bin:${env.PATH}"
 
-		def priorityConfigRepoUrl = 'ssh://git@innersource.accenture.com/appq/priorityconfigapi.git'
-
+		//def priorityConfigRepoUrl = 'ssh://git@innersource.accenture.com/appq/priorityconfigapi.git'
+		def priorityConfigRepoUrl = 'https://r.satti@innersource.accenture.com/scm/appq/priorityconfigapi.git'
 		def applicationDir = "priorityconfig"
 		def devServerIPString = "${DEV_BOX_IP}"
 		dockerRegistryIP ="${PRIVATE_REPO_IP}"
