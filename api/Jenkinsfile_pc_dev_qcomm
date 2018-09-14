@@ -2,7 +2,7 @@
 @Library('JenkinsSharedLibrary') _
 
 // =========== GLOBAL VARS ===========
-def dockerRegistryIP, , releasedVersion
+def dockerRegistryIP
 // =========== GLOBAL VARS ===========
 
 node {

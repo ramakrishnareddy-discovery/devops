@@ -7,6 +7,8 @@ node {
 			[$class: 'LogRotator', numToKeepStr: '3']],
 		disableConcurrentBuilds(),
 		parameters([
+			string(name: 'MAJOR_VERSION', description: '', defaultValue: "0", trim: true),
+			string(name: 'MINOR_VERSION', description: '', defaultValue: "snapshot", trim: true),
 			string(name: 'GIT_BRANCH', description: ' Branch Name', defaultValue: "feature/rel2", trim: true),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, 	description: 'Tagging required or not')
 		]),
@@ -31,8 +33,7 @@ node {
 		// Since artifactName and releasedVersion fetching from POM.xml, should execute after cloning the repo.
 		def artifactName = utils.getArtifact(applicationDir)
 
-		// Keep below code for future purpose
-		/*
+
 		 dir(applicationDir) {
 		 releasedVersion = sh (
 		 script: """ mvn help:evaluate -Dexpression=project.version -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER} | grep -e '^[^\\[]'  """,
@@ -40,9 +41,9 @@ node {
 		 ).trim()
 		 }
 		 echo "releasedVersion: ${releasedVersion}"
-		 */
+		 
 
-		releasedVersion = "3.0.0"
+		//releasedVersion = "3.0.0"
 		currentBuild.displayName = "${artifactName}.${releasedVersion}"
 
 		build(applicationDir, releasedVersion)
