@@ -38,10 +38,10 @@ node {
 		// script: """ mvn help:evaluate -Dexpression=project.version -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER} | grep -e '^[^\\[]'  """,
 		// HARD CODED build number to '0'
 		 dir(applicationDir) {
-		 releasedVersion = sh (
-		 script: """ mvn help:evaluate -Dexpression=project.version -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.0 | grep -e '^[^\\[]'  """,
-		 returnStdout: true
-		 ).trim()
+			releasedVersion = sh (
+				script: """ mvn help:evaluate -Dexpression=project.version -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.0 | grep -e '^[^\\[]'  """,
+				returnStdout: true
+			).trim()
 		 }
 		 echo "releasedVersion: ${releasedVersion}"
 		 
