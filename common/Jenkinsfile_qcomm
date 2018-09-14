@@ -23,7 +23,8 @@ node {
 
 		echo "mvnPath:${env.PATH}"
 		def workspacePath = pwd()
-		def commonRepoUrl = "ssh://git@innersource.accenture.com/appq/common.git"
+		//def commonRepoUrl = "ssh://git@innersource.accenture.com/appq/common.git"
+		def commonRepoUrl = "'https://r.satti@innersource.accenture.com/scm/appq/common.git"
 		def applicationDir = "common"
 		def releasedVersion
 		// =========== USER DEFINED VARS ===========
