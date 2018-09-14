@@ -32,7 +32,7 @@ node {
 		def mvnHome = tool name: "Maven_V3"
 		env.PATH = "${mvnHome}/bin:${env.PATH}"
 
-		def apiRepoUrl = 'ssh://git@github.com:ramakrishnareddysatti/exercises.git'
+		def apiRepoUrl = 'git@github.com:ramakrishnareddysatti/exercises.git'
 		def applicationDir = "demandplannerapi"
 		def devServerIPString = "${DEV_BOX_IP}"
 		qaReleaseCandidate = "${QA_RELEASE_CANDIDATE}"
@@ -175,58 +175,11 @@ def checkout(applicationDir, branchName, apiRepoUrl, utils) {
 		git branch: "${branchName}",
 		credentialsId: 'github-repo-access',
 		url: "${apiRepoUrl}"
+
+		//git branch: 'new', credentialsId: '4ab0fb24-b0f6-417f-8bce-7990580d3e4b', url: 'https://vilvamani.arumugam@innersource.accenture.com/scm/app_ap/piab-poc-teambandc.git' 
 	}
 	}
 }
 
-def build(applicationDir, releasedVersion) {
-	stage ('Maven Build') {
-		dir(applicationDir) { sh "mvn clean install -Dmaven.test.skip=true -Drevision=${releasedVersion}" }
-	}
-}
 
-def allTests(applicationDir, releasedVersion) {
-	stage ('Junit Test') { dir(applicationDir) {sh "mvn test -Drevision=${releasedVersion}" }}
-}
-
-def processCodeCoverage(applicationDir, releasedVersion, utils) {
-	stage('Cobertura Code Coverage') {
-		utils.processCodeCoverage(applicationDir, releasedVersion)
-	}
-}
-
-def sonarScanner(applicationDir, releasedVersion, utils) {
-	stage('SonarQube Analysis') {
-		utils.sonarScanner(applicationDir, releasedVersion)
-	}
-}
-
-def allCodeQualityTests(utils) {
-	stage("SonarQube Quality Gate") { utils.processQualityGate() }
-}
-
-def dockerBuild(applicationDir, artifactName,  releasedVersion, utils) {
-	stage('Docker Build'){
-		utils.apiDockerBuild(applicationDir, artifactName, releasedVersion)
-	}
-}
-
-def tagBranch(applicationDir, apiRepoUrl, releasedVersion,GIT_TAG, utils) {
-	if (GIT_TAG.toBoolean()) {
-		stage('Tag Branch') {
-			utils.tagBranch(applicationDir, apiRepoUrl, releasedVersion)
-		}
-		sh "docker images"
-	}
-}
-
-def dockerClean(artifactName, serverIP, utils) {
-	//stage('Docker Clean'){
-	utils.removeDanglingImages(artifactName, serverIP)
-	//}
-}
-
-def deployImage(artifactName, releasedVersion, PROP_ENV, destinationIP, utils, dockerRegistryIP) {
-	utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP, dockerRegistryIP)
-}
 //--------------------------------------------------------- Utility Methods END ---------------------------------------------------------

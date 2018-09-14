@@ -1,0 +1,102 @@
+#!/usr/bin/env groovy
+@Library('JenkinsSharedLibrary') _
+
+// =========== GLOBAL VARS ===========
+def dockerRegistryIP
+// =========== GLOBAL VARS ===========
+
+node {
+	def projectProperties = [
+		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '3']],
+		disableConcurrentBuilds(),
+		parameters([
+			//string(name: 'MAJOR_VERSION', description: '', defaultValue: "0", trim: true),
+			//string(name: 'MINOR_VERSION', description: '', defaultValue: "snapshot", trim: true),
+			string(name: 'GIT_BRANCH', description: 'UI Branch Name', defaultValue: "develop", trim: true),
+			choice(name: 'PROP_ENV',choices: ["dev", "dev2", "qa"].join("\n"), description: 'Environment To Deploy'),
+			string(name: 'DEV_BOX_IP', description: 'Comma separated servers IP', defaultValue: "10.0.3.32", trim: true),
+			string(name: 'PRIVATE_REPO_IP', description: 'Docker Images Private Repo', defaultValue: "10.0.31.225", trim: true)
+		])
+	]
+	//projectProperties.add(pipelineTriggers([cron('H 21 * * *')]))
+
+	properties(projectProperties)
+
+	Utils utils = new Utils()
+
+	try {
+		// =========== USER DEFINED VARS ===========
+		def workspacePath = pwd()
+		def nodeHome = tool 'NodeJS_V8'
+		env.PATH="${env.PATH}:${nodeHome}/bin"
+		def uiRepoUrl = 'ssh://git@innersource.accenture.com/appq/demandplannerui.git'
+
+		def artifactName = 'demandplannerui'
+		def applicationDir = 'demandplannerui'
+		//def releasedVersion = "${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}"
+		def releasedVersion = "0.snapshot.${BUILD_NUMBER}"
+		def branchName = "${GIT_BRANCH}"
+		def devServerIPString = "${DEV_BOX_IP}"
+		dockerRegistryIP ="${PRIVATE_REPO_IP}"
+		// =========== USER DEFINED VARS ===========
+
+		currentBuild.displayName = "${artifactName}.${releasedVersion}"
+		echo "workspacePath: ${workspacePath}"
+
+		if (!devServerIPString?.trim()) {
+			error "Missing DEV server IP in Build Parameters"
+		}
+
+		stage('Git Checkout') {
+			utils.sourceCodeCheckout(applicationDir, branchName, uiRepoUrl)
+		}
+
+		stage('NPM Build') {
+			//'demandplannerui_npmbuild' folder will have ng build generated 'dist' folder(To avoid putting 'dist' folder in  'demandplannerui').
+			utils.npmBuild('demandplannerui_npmbuild', branchName, uiRepoUrl)
+		}
+
+		stage('SonarQube Analysis') { utils.uiCodeQualityAnalysis('demandplannerui_npmbuild', releasedVersion) }
+
+		stage("SonarQube Quality Gate") { utils.processQualityGate() }
+
+		stage('Docker Build') {
+			utils.uiDockerBuild(applicationDir, artifactName, releasedVersion)
+		}
+		utils.pushImage(artifactName, releasedVersion, dockerRegistryIP)										// Push Image to Private Repository
+		utils.removeImages(artifactName)  																		// To clean images created on Jenkins BOX
+
+	/*
+		for (String devServerIP : devServerIPString.split(",")) {
+			stage("deploy to DEV: ${devServerIP}"){
+				utils.stopContainer(artifactName, devServerIP)
+				dockerClean(artifactName, devServerIP, utils)													// To clean images created on DEV BOX
+				deployImage(artifactName, releasedVersion, "${PROP_ENV}", devServerIP, utils, dockerRegistryIP)
+				subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' on ${devServerIP}"
+				bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}] on ${devServerIP}':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
+				utils.sendEmailNotification(subjectText, bodyText)
+			}
+		}
+	*/
+	}catch (error) {
+		println error
+		// If there was an exception thrown, the build failed
+		// currentBuild.result = 'FAILURE'
+		subjectText = "JENKINS Notification: FAILED Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
+		bodyText = """ <p>FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
+		utils.sendEmailNotification(subjectText, bodyText)
+		throw error
+	}
+}
+
+//--------------------------------------------------------- Utility Methods START ---------------------------------------------------------
+def dockerClean(artifactName, serverIP, utils) {
+	//stage('Docker Clean'){
+	utils.removeDanglingImages(artifactName, serverIP)
+	//}
+}
+
+def deployImage(artifactName, releasedVersion, PROP_ENV, destinationIP, utils, dockerRegistryIP) {
+	utils.promoteUIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP, dockerRegistryIP)
+}
+//--------------------------------------------------------- Utility Methods END ---------------------------------------------------------
