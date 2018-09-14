@@ -1,0 +1,94 @@
+#!/usr/bin/env groovy
+@Library('JenkinsSharedLibrary') _
+
+node {
+	properties([
+		[$class: 'BuildDiscarderProperty', strategy:
+			[$class: 'LogRotator', numToKeepStr: '3']],
+		disableConcurrentBuilds(),
+		parameters([
+			string(name: 'GIT_BRANCH', description: ' Branch Name', defaultValue: "feature/rel2", trim: true),
+			booleanParam(name: 'GIT_TAG', defaultValue: false, 	description: 'Tagging required or not')
+		]),
+		//pipelineTriggers([ cron('H 6,11 * * *') ])
+	])
+
+	Utils utils = new Utils()
+	try {
+		// =========== USER DEFINED VARS ===========
+		def mvnHome = tool name: "Maven_V3"
+		env.PATH = "${mvnHome}/bin:${env.PATH}"
+
+		echo "mvnPath:${env.PATH}"
+		def workspacePath = pwd()
+		def commonRepoUrl = "ssh://git@innersource.accenture.com/appq/common.git"
+		def applicationDir = "common"
+		def releasedVersion
+		// =========== USER DEFINED VARS ===========
+
+		checkout(applicationDir, GIT_BRANCH, commonRepoUrl, utils)
+
+		// Since artifactName and releasedVersion fetching from POM.xml, should execute after cloning the repo.
+		def artifactName = utils.getArtifact(applicationDir)
+
+		// Keep below code for future purpose
+		/*
+		 dir(applicationDir) {
+		 releasedVersion = sh (
+		 script: """ mvn help:evaluate -Dexpression=project.version -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER} | grep -e '^[^\\[]'  """,
+		 returnStdout: true
+		 ).trim()
+		 }
+		 echo "releasedVersion: ${releasedVersion}"
+		 */
+
+		releasedVersion = "3.0.0"
+		currentBuild.displayName = "${artifactName}.${releasedVersion}"
+
+		build(applicationDir, releasedVersion)
+		sonarScanner(applicationDir, releasedVersion, utils)
+		allCodeQualityTests(utils)
+		tagBranch(applicationDir, commonRepoUrl, releasedVersion,GIT_TAG, utils)
+		subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
+		bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
+		utils.sendEmailNotification(subjectText, bodyText)
+	}catch (error) {
+		println error
+		// If there was an exception thrown, the build failed
+		//currentBuild.result = 'FAILURE'
+		subjectText = "JENKINS Notification : FAILED Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
+		bodyText = """ <p>FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
+		utils.sendEmailNotification(subjectText, bodyText)
+	}
+}
+
+def checkout(applicationDir, branchName, commonRepoUrl, utils) {
+	stage('Git Checkout') {
+		utils.sourceCodeCheckout(applicationDir, branchName, commonRepoUrl)
+	}
+}
+
+def build(applicationDir, releasedVersion){
+	stage ('Maven Build') {
+		dir(applicationDir) { sh "mvn clean install -Dmaven.test.skip=true -Drevision=${releasedVersion}" }
+	}
+}
+
+def sonarScanner(applicationDir, releasedVersion, utils) {
+	stage('SonarQube Analysis') {
+		utils.sonarScanner(applicationDir, releasedVersion)
+	}
+}
+
+def allCodeQualityTests(utils) {
+	stage("SonarQube Quality Gate") { utils.processQualityGate() }
+}
+
+def tagBranch(applicationDir, commonRepoUrl, releasedVersion,GIT_TAG, utils) {
+	if (GIT_TAG.toBoolean()) {
+		stage('Tag Branch') {
+			utils.tagBranch(applicationDir, commonRepoUrl, releasedVersion)
+		}
+	}
+}
+
