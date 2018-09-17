@@ -12,6 +12,7 @@ node {
 		parameters([
 			string(name: 'MAJOR_VERSION', description: '', defaultValue: "0", trim: true),
 			string(name: 'MINOR_VERSION', description: '', defaultValue: "snapshot", trim: true),
+			string(name: 'USER', description: 'username', defaultValue: "",trim: true),
 			string(name: 'GIT_BRANCH', description: 'API Branch Name', defaultValue: "feature/dev",trim: true),
 			string(name: 'PROP_ENV', description: 'Properties Environment', defaultValue: "dev",trim: true),
 			//choice(name: 'PROP_ENV',choices: ["dev", "dev2", "qa"].join("\n"), description: 'Environment To Deploy'),
@@ -32,7 +33,7 @@ node {
 		env.PATH = "${mvnHome}/bin:${env.PATH}"
 
 		//def apiRepoUrl = 'ssh://git@innersource.accenture.com/appq/demandplannerapi.git'
-		def apiRepoUrl = 'https://r.satti@innersource.accenture.com/scm/appq/demandplannerapi.git'
+		def apiRepoUrl = "https://${USER}@innersource.accenture.com/scm/appq/demandplannerapi.git"
 		def applicationDir = "demandplannerapi"
 		def devServerIPString = "${DEV_BOX_IP}"
 		dockerRegistryIP ="${PRIVATE_REPO_IP}"
