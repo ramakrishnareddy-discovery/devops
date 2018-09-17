@@ -100,7 +100,7 @@ def checkout(applicationDir, branchName, apiRepoUrl, utils) {
 			echo "Checkout in progress..."
 			dir(applicationDir) {
 				git branch: "${branchName}",
-				url: "${repoUrl}"
+				url: "${apiRepoUrl}"
 			}
 	}
 }
