@@ -95,7 +95,13 @@ node {
 
 def checkout(applicationDir, branchName, apiRepoUrl, utils) {
 	stage('Git Checkout') {
-		utils.sourceCodeCheckout(applicationDir, branchName, apiRepoUrl)
+		//utils.sourceCodeCheckout(applicationDir, branchName, apiRepoUrl)
+			deleteDir()
+			echo "Checkout in progress..."
+			dir(applicationDir) {
+				git branch: "${branchName}",
+				url: "${repoUrl}"
+			}
 	}
 }
 
