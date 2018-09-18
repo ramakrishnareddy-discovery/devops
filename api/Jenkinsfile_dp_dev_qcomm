@@ -33,7 +33,7 @@ node {
 		env.PATH = "${mvnHome}/bin:${env.PATH}"
 
 		//def apiRepoUrl = 'ssh://git@innersource.accenture.com/appq/demandplannerapi.git'
-		def apiRepoUrl = "https://${USER}@innersource.accenture.com/scm/appq/demandplannerapi.git"
+		def apiRepoUrl = "https://git@innersource.accenture.com/scm/appq/demandplannerapi.git"
 		def applicationDir = "demandplannerapi"
 		def devServerIPString = "${DEV_BOX_IP}"
 		dockerRegistryIP ="${PRIVATE_REPO_IP}"
