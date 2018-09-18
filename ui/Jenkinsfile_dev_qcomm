@@ -35,8 +35,8 @@ node {
 
 		def artifactName = 'demandplannerui'
 		def applicationDir = 'demandplannerui'
-		//def releasedVersion = "${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}"
-		def releasedVersion = "0.snapshot.${BUILD_NUMBER}"
+		def releasedVersion = "${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}"
+		//def releasedVersion = "0.snapshot.${BUILD_NUMBER}"
 		def branchName = "${GIT_BRANCH}"
 		def devServerIPString = "${DEV_BOX_IP}"
 		dockerRegistryIP ="${PRIVATE_REPO_IP}"
