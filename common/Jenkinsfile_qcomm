@@ -1,15 +1,5 @@
-
-
-
-
-
-
-
-
-
-
 #!/usr/bin/env groovy
-import DslUtilities.Utilities
+@Library('JenkinsSharedLibrary') _
 
 node {
 	properties([
@@ -19,15 +9,13 @@ node {
 		parameters([
 			string(name: 'MAJOR_VERSION', description: '', defaultValue: "0", trim: true),
 			string(name: 'MINOR_VERSION', description: '', defaultValue: "snapshot", trim: true),
-			string(name: 'GIT_BRANCH', description: 'Branch Name', defaultValue: "feature/rel2", trim: true),
-			string(name: 'USER', description: '', defaultValue: "", trim: true),
+			string(name: 'GIT_BRANCH', description: ' Branch Name', defaultValue: "feature/rel2", trim: true),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, 	description: 'Tagging required or not')
 		]),
 		//pipelineTriggers([ cron('H 6,11 * * *') ])
 	])
 
-	Utilities utils = new Utilities()
-
+	Utils utils = new Utils()
 	try {
 		// =========== USER DEFINED VARS ===========
 		def mvnHome = tool name: "Maven_V3"
@@ -36,7 +24,7 @@ node {
 		echo "mvnPath:${env.PATH}"
 		def workspacePath = pwd()
 		//def commonRepoUrl = "ssh://git@innersource.accenture.com/appq/common.git"
-		def commonRepoUrl = "https://${USER}@innersource.accenture.com/scm/appq/common.git"
+		def commonRepoUrl = "https://r.satti@innersource.accenture.com/scm/appq/common.git"
 		def applicationDir = "common"
 		def releasedVersion
 		// =========== USER DEFINED VARS ===========
@@ -80,9 +68,7 @@ node {
 
 def checkout(applicationDir, branchName, commonRepoUrl, utils) {
 	stage('Git Checkout') {
-		dir(applicationDir) {
-			utils.sourceCodeCheckout(applicationDir, branchName, commonRepoUrl)
-		}
+		utils.sourceCodeCheckout(applicationDir, branchName, commonRepoUrl)
 	}
 }
 
@@ -109,4 +95,3 @@ def tagBranch(applicationDir, commonRepoUrl, releasedVersion,GIT_TAG, utils) {
 		}
 	}
 }
-
