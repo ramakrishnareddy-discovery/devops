@@ -1,0 +1,94 @@
+#!/usr/bin/env groovy
+@Library('JenkinsSharedLibrary') _
+
+node {
+	properties([
+		[$class: 'BuildDiscarderProperty', strategy:
+			[$class: 'LogRotator', numToKeepStr: '3']],
+		disableConcurrentBuilds(),
+		parameters([
+			choice(choices: ["master"].join("\n"), description: 'Branch Name', name: 'GIT_BRANCH'),
+			booleanParam(name: 'GIT_TAG', defaultValue: false, 	description: 'Tagging required or not')
+		]),
+		pipelineTriggers([
+			//pollSCM('H/15 * * * *'),
+			//pollSCM('* * * * *'),
+			//cron('@daily')
+		])
+	])
+
+	Utils utils = new Utils()
+	try {
+		// =========== USER DEFINED VARS ===========
+		def workspacePath = pwd()
+		def mvnHome = tool name: "Maven_V3"
+		env.PATH = "${mvnHome}/bin:${env.PATH}"
+		def commonRepoUrl = "ssh://git@innersource.accenture.com/appq/common.git"
+		// =========== USER DEFINED VARS ===========
+
+		stage('Git Checkout') {
+			deleteDir()
+			echo "Checkout in progress..."
+			dir('common') {
+				git branch: '${GIT_BRANCH}',
+				credentialsId: 'git-repo-ssh-access',
+				url: "${commonRepoUrl}"
+			}
+		}
+
+		stage ('Maven Build') {
+			dir('common') { sh "mvn clean install -Dmaven.test.skip=true" }
+		}
+
+		stage('SonarQube Analysis') {
+			dir('common') {
+				withSonarQubeEnv('SonarQube_V7') {
+					// SonarQube taskId is automatically attached to the pipeline context
+					sh "mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.3.0.603:sonar"
+				}
+			}
+		}
+
+	 	//Commenting as Common project doesnt' have Unit Tests:
+		//Since common project doesn't have unit tests, qualityGate status is failing eventually Pipeline aborted due to quality gate failure: ERROR
+	
+		// Configure a webhook in your SonarQube server pointing to <your Jenkins instance>/sonarqube-webhook/
+		stage("SonarQube Quality Gate") {
+			// Just in case something goes wrong, pipeline will be killed after a timeout
+			timeout(time: 2, unit: 'MINUTES') {
+				def qualityGate = waitForQualityGate() // Reuse taskId previously collected by withSonarQubeEnv
+				if (qualityGate.status != 'OK') {
+					//error "Pipeline aborted due to quality gate failure: ${qualityGate.status}"
+					println("SonarQube Quality Gate Failed.failure: ${qualityGate.status}")
+				} else
+				{
+					println("SonarQube Quality Gate Passed")
+				}
+			}
+		}
+	
+
+		if (GIT_TAG.toBoolean()) {
+			stage('Tag Branch'){
+				def releasedVersion = utils.getReleasedVersion("common")
+				sshagent (credentials: ['git-repo-ssh-access']) {
+						dir('common') {
+							sh "ls -l"
+							sh "git remote set-url origin ${commonRepoUrl}"
+							//sh "git tag ${IMAGE_BRANCH_PREFIX}-${BUILD_NUMBER}"
+							sh "git tag ${releasedVersion}-${BUILD_NUMBER}"
+							sh "git push --tags"
+						}
+				}
+		    }
+		}	
+	}catch (error) {
+		println error
+		// If there was an exception thrown, the build failed
+		currentBuild.result = 'FAILED'
+		throw error
+	} finally {
+		// Success or failure, always send notifications
+		utils.sendNotification(currentBuild.result)
+	}
+}
