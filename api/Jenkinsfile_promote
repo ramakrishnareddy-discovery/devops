@@ -3,16 +3,16 @@
 
 node {
 	def projectProperties = [
-[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '3']],
-disableConcurrentBuilds(),
-parameters([
-string(name: 'PROMOTE_ENV_IP', description: '', defaultValue: "", trim: true),
-choice(name: 'APPLICATION_NAME',choices: ["qualcomm-ms-priorityconfig", "qualcomm-ms-demandplanner", "demandplannerui"].join("\n"), description: 'Artifact Name'),
-string(name: 'APPLICATION_VERSION', description: '', defaultValue: "", trim: true),
-string(name: 'PROP_ENV', description: '', defaultValue: "", trim: true),
-string(name: 'PRIVATE_REPO_IP', description: 'Docker Images Private Repo', defaultValue: "10.0.31.225", trim: true),
-])
-]
+		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '3']],
+		disableConcurrentBuilds(),
+		parameters([
+				string(name: 'PROMOTE_ENV_IP', description: '', defaultValue: "", trim: true),
+				choice(name: 'APPLICATION_NAME',choices: ["qualcomm-ms-priorityconfig", "qualcomm-ms-demandplanner", "demandplannerui"].join("\n"), description: 'Artifact Name'),
+				string(name: 'APPLICATION_VERSION', description: '', defaultValue: "", trim: true),
+				string(name: 'PROP_ENV', description: '', defaultValue: "", trim: true),
+				string(name: 'PRIVATE_REPO_IP', description: 'Docker Images Private Repo', defaultValue: "10.0.31.225", trim: true),
+			])
+		]
 
 	properties(projectProperties)
 	Utils utils = new Utils()
