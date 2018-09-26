@@ -66,7 +66,7 @@ def deployImage(artifactName, releasedVersion, PROP_ENV, destinationIP, utils, d
 		utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP, dockerRegistryIP)
 	}else if(artifactName == "demandplannerui") {
 		echo "User Chosen ${artifactName}"
-		/utils.promoteUIToEnv(artifactName, releasedVersion, API_PROP_ENV, destinationIP, dockerRegistryIP)
+		utils.promoteUIToEnv(artifactName, releasedVersion, API_PROP_ENV, destinationIP, dockerRegistryIP)
 	}
 }
 //--------------------------------------------------------- Utility Methods END ---------------------------------------------------------
