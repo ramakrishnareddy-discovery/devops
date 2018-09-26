@@ -3,48 +3,39 @@
 
 node {
 	def projectProperties = [
-		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '3']],
-		disableConcurrentBuilds(),
-		parameters([
-			string(name: 'PROD_BOX_IP', description: '', defaultValue: "10.0.31.242", trim: true),
-			string(name: 'APPLICATION_VERSION', description: '', defaultValue: "", trim: true)
-		])
-	]
+[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '3']],
+disableConcurrentBuilds(),
+parameters([
+string(name: 'PROMOTE_ENV_IP', description: '', defaultValue: "", trim: true),
+choice(name: 'APPLICATION_NAME',choices: ["qualcomm-ms-priorityconfig", "qualcomm-ms-demandplanner", "demandplannerui"].join("\n"), description: 'Artifact Name'),
+string(name: 'APPLICATION_VERSION', description: '', defaultValue: "", trim: true),
+string(name: 'PROP_ENV', description: '', defaultValue: "", trim: true),
+string(name: 'PRIVATE_REPO_IP', description: 'Docker Images Private Repo', defaultValue: "10.0.31.225", trim: true),
+])
+]
 
 	properties(projectProperties)
-
 	Utils utils = new Utils()
 
 	try {
 		// =========== USER DEFINED VARS ===========
-		def workspacePath = pwd()
-		echo "workspacePath: ${workspacePath}"
-		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_api.git'
-		distroDirPath = "/product/jenkins/distro_api" 
-		def artifactName = 'qualcomm-ms-demandplanner'
-		def prodServerIPString = "${PROD_BOX_IP}"
+		def promoteEnvIPString = "${PROMOTE_ENV_IP}"
+		def artifactName = "${APPLICATION_NAME}"
 		def releasedVersion = "${APPLICATION_VERSION}"
+		def propertiesEnv = "${PROP_ENV}"
+		def dockerRegistryIP ="${PRIVATE_REPO_IP}"
 		// =========== USER DEFINED VARS ===========
 
-		if (!prodServerIPString?.trim()) {
-			error "Missing PROD server IP in Build Parameters"
-		}
-
-		stage('Git Checkout') {
-			utils.distroCheckout(distroDirPath, distroRepoUrl)
-		}
-
-		for (String prodServerIP : prodServerIPString.split(",")) {
-			dockerClean(artifactName, prodServerIP, utils)
-			loadImage(distroDirPath, artifactName, releasedVersion, prodServerIP, utils)
-			stage("deploy to PROD: ${prodServerIP}"){
-				utils.stopContainer(artifactName, prodServerIP)
-				deployImage(artifactName, releasedVersion, "prod", prodServerIP, utils)
-
-				subjectText = "JENKINS Notification: Successful PROD Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' on ${prodServerIP}"
-				bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}] on ${prodServerIP}':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
+		for (String promoteServerIP : promoteEnvIPString.split(",")) {
+			stage("deploy to ${promoteServerIP}"){
+				utils.stopContainer(artifactName, promoteServerIP)
+				dockerClean(artifactName, promoteServerIP, utils)											// To clean images created on PROMOTION BOX
+				deployImage(artifactName, releasedVersion, propertiesEnv, promoteServerIP, utils, dockerRegistryIP)
+				subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' on ${promoteServerIP}"
+				bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}] on ${promoteServerIP}':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
 				utils.sendEmailNotification(subjectText, bodyText)
 			}
+
 		}
 	}catch (error) {
 		println error
@@ -60,19 +51,24 @@ node {
 //--------------------------------------------------------- Utility Methods START ---------------------------------------------------------
 
 def dockerClean(artifactName, serverIP, utils) {
-	//stage('Docker Clean'){
 	utils.removeDanglingImages(artifactName, serverIP)
-	//}
 }
 
-def loadImage(distroDirPath, artifactName, releasedVersion, destinationIP, utils) {
-	//stage('load Image'){
-	utils.loadImageInProd(distroDirPath, artifactName, releasedVersion, destinationIP)
-	//}
+def deployImage(artifactName, releasedVersion, PROP_ENV, destinationIP, utils, dockerRegistryIP) {
+	if [ $artifactName == "qualcomm-ms-priorityconfig" ]
+	then
+	echo 'User Chosen ${artifactName}'
+	//utils.promotePCAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP, dockerRegistryIP)
+	elif [ $artifactName == "qualcomm-ms-demandplanner" ]
+	then
+	echo "User Chosen ${artifactName}"
+	//utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP, dockerRegistryIP)
+	elif [ $artifactName == "demandplannerui" ]
+	then
+	echo "User Chosen ${artifactName}"
+	//utils.promoteUIToEnv(artifactName, releasedVersion, API_PROP_ENV, destinationIP, dockerRegistryIP)
+	fi
 }
 
-def deployImage(artifactName, releasedVersion, PROP_ENV, destinationIP, utils) {
-	utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP)
-}
 
 //--------------------------------------------------------- Utility Methods END ---------------------------------------------------------
