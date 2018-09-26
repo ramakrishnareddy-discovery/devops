@@ -6,13 +6,13 @@ node {
 		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '3']],
 		disableConcurrentBuilds(),
 		parameters([
-				string(name: 'PROMOTE_ENV_IP', description: '', defaultValue: "", trim: true),
-				choice(name: 'APPLICATION_NAME',choices: ["qualcomm-ms-priorityconfig", "qualcomm-ms-demandplanner", "demandplannerui"].join("\n"), description: 'Artifact Name'),
-				string(name: 'APPLICATION_VERSION', description: '', defaultValue: "", trim: true),
-				string(name: 'PROP_ENV', description: '', defaultValue: "", trim: true),
-				string(name: 'PRIVATE_REPO_IP', description: 'Docker Images Private Repo', defaultValue: "10.0.31.225", trim: true),
-			])
-		]
+			string(name: 'PROMOTE_ENV_IP', description: '', defaultValue: "", trim: true),
+			choice(name: 'APPLICATION_NAME',choices: ["qualcomm-ms-priorityconfig", "qualcomm-ms-demandplanner", "demandplannerui"].join("\n"), description: 'Artifact Name'),
+			string(name: 'APPLICATION_VERSION', description: '', defaultValue: "", trim: true),
+			string(name: 'PROP_ENV', description: '', defaultValue: "", trim: true),
+			string(name: 'PRIVATE_REPO_IP', description: 'Docker Images Private Repo', defaultValue: "10.0.31.225", trim: true),
+		])
+	]
 
 	properties(projectProperties)
 	Utils utils = new Utils()
@@ -55,19 +55,20 @@ def dockerClean(artifactName, serverIP, utils) {
 }
 
 def deployImage(artifactName, releasedVersion, PROP_ENV, destinationIP, utils, dockerRegistryIP) {
-	if [ $artifactName == "qualcomm-ms-priorityconfig" ]
-	then
-	echo 'User Chosen ${artifactName}'
-	//utils.promotePCAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP, dockerRegistryIP)
-	elif [ $artifactName == "qualcomm-ms-demandplanner" ]
-	then
-	echo "User Chosen ${artifactName}"
-	//utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP, dockerRegistryIP)
-	elif [ $artifactName == "demandplannerui" ]
-	then
-	echo "User Chosen ${artifactName}"
-	//utils.promoteUIToEnv(artifactName, releasedVersion, API_PROP_ENV, destinationIP, dockerRegistryIP)
-	fi
+	if (artifactName == "qualcomm-ms-priorityconfig") {
+		echo 'qualcomm-ms-priorityconfig'
+		echo 'User Chosen ${artifactName}'
+		//utils.promotePCAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP, dockerRegistryIP)
+
+	}else if(artifactName == "qualcomm-ms-demandplanner") {
+		echo 'qualcomm-ms-demandplanner'
+		echo "User Chosen ${artifactName}"
+		//utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP, dockerRegistryIP)
+	}else if(artifactName == "demandplannerui") {
+		echo 'UI'
+		echo "User Chosen ${artifactName}"
+		//utils.promoteUIToEnv(artifactName, releasedVersion, API_PROP_ENV, destinationIP, dockerRegistryIP)
+	}
 }
 
 
