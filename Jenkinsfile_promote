@@ -29,7 +29,7 @@ node {
 		def dockerRegistryIP ="${PRIVATE_REPO_IP}"
 		// =========== USER DEFINED VARS ===========
 
-		currentBuild.displayName = "${artifactName}.${releasedVersion}"
+		currentBuild.displayName = "${artifactName}.${releasedVersion}_BD_${env.BUILD_NUMBER}"
 
 		for (String promoteServerIP : promoteEnvIPString.split(",")) {
 			stage("deploy to ${promoteServerIP}"){
