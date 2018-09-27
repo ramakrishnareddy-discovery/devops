@@ -29,6 +29,8 @@ node {
 		def dockerRegistryIP ="${PRIVATE_REPO_IP}"
 		// =========== USER DEFINED VARS ===========
 
+		currentBuild.displayName = "${artifactName}.${releasedVersion}"
+
 		for (String promoteServerIP : promoteEnvIPString.split(",")) {
 			stage("deploy to ${promoteServerIP}"){
 				utils.stopContainer(artifactName, promoteServerIP)
