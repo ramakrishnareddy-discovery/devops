@@ -2,7 +2,7 @@
 @Library('JenkinsSharedLibrary') _
 
 // =========== GLOBAL VARS ===========
-def artifactName, releasedVersion , qaServerIPString, userApprovalQAInput, qaReleaseCandidate, isQADeployApproved = true, dockerRegistryIP
+def artifactName, releasedVersion , qaServerIPString, distroDirPath, userApprovalQAInput, isQADeployApproved = true, dockerRegistryIP
 // =========== GLOBAL VARS ===========
 
 node {
@@ -12,69 +12,72 @@ node {
 		parameters([
 			string(name: 'MAJOR_VERSION', description: '', defaultValue: "0", trim: true),
 			string(name: 'MINOR_VERSION', description: '', defaultValue: "snapshot", trim: true),
-			string(name: 'GIT_BRANCH', description: 'PriorityConfig Branch Name', defaultValue: "feature/dev",trim: true),
-			string(name: 'DEV_BOX_IP', description: 'comma separated servers IP', defaultValue: "10.0.3.32", trim: true),
+			string(name: 'GIT_BRANCH', description: 'UI Branch Name', defaultValue: "develop", trim: true),
+			string(name: 'DEV_BOX_IP', description: 'Comma separated servers IP', defaultValue: "10.0.3.32", trim: true),
 			string(name: 'DEV_PROP_ENV', description: 'ENV Prop Name', defaultValue: "",trim: true),
 			booleanParam(name: 'QA_RELEASE_CANDIDATE', defaultValue: true, description: 'Promote to QA or Not'),
-			string(name: 'QA_BOX_IP', description: 'comma separated servers IP', defaultValue: "10.0.31.242", trim: true),
+			string(name: 'QA_BOX_IP', description: 'Comma separated servers IP', defaultValue: "10.0.31.242", trim: true),
 			string(name: 'QA_PROP_ENV', description: 'ENV Prop Name', defaultValue: "",trim: true),
 			string(name: 'PRIVATE_REPO_IP', description: 'Docker Images Private Repo', defaultValue: "10.0.31.225", trim: true),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not')
 		])
 	]
-	//projectProperties.add(pipelineTriggers([upstream(threshold: hudson.model.Result.SUCCESS,upstreamProjects: "common")]))
+	//projectProperties.add(pipelineTriggers([cron('H 21 * * *')]))
+
 	properties(projectProperties)
 
 	Utils utils = new Utils()
+
 	try {
 		// =========== USER DEFINED VARS ===========
 		def workspacePath = pwd()
-		echo "workspacePath: ${workspacePath}"
+		def nodeHome = tool 'NodeJS_V8'
+		env.PATH="${env.PATH}:${nodeHome}/bin"
+		def uiRepoUrl = 'ssh://git@innersource.accenture.com/appq/demandplannerui.git'
 
-		def mvnHome = tool name: "Maven_V3"
-		env.PATH = "${mvnHome}/bin:${env.PATH}"
-
-		def priorityConfigRepoUrl = 'ssh://git@innersource.accenture.com/appq/priorityconfigapi.git'
-
-		def applicationDir = "priorityconfig"
+		artifactName = 'demandplannerui'
+		def applicationDir = 'demandplannerui'
+		releasedVersion = "${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}"
+		def branchName = "${GIT_BRANCH}"
 		def devServerIPString = "${DEV_BOX_IP}"
 		qaReleaseCandidate = "${QA_RELEASE_CANDIDATE}"
 		qaServerIPString = "${QA_BOX_IP}"
 		dockerRegistryIP ="${PRIVATE_REPO_IP}"
 		// =========== USER DEFINED VARS ===========
 
+		currentBuild.displayName = "${artifactName}.${releasedVersion}"
+		echo "workspacePath: ${workspacePath}"
+
 		if (!devServerIPString?.trim()) {
 			error "Missing DEV server IP in Build Parameters"
 		}
 
-		checkout(applicationDir, GIT_BRANCH, priorityConfigRepoUrl, utils)
-		// Since artifactName and releasedVersion fetching from POM.xml, should execute after cloning the repo.
-		artifactName = utils.getArtifact(applicationDir)
-
-		dir(applicationDir) {
-			releasedVersion = sh (
-					script: """ mvn help:evaluate -Dexpression=project.version -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER} | grep -e '^[^\\[]'  """,
-					returnStdout: true
-					).trim()
+		stage('Git Checkout') {
+			utils.sourceCodeCheckout(applicationDir, branchName, uiRepoUrl)
 		}
-		echo "releasedVersion: ${releasedVersion}"
 
-		currentBuild.displayName = "${artifactName}.${releasedVersion}"
+		stage('NPM Build') {
+			//'demandplannerui_npmbuild' folder will have ng build generated 'dist' folder(To avoid putting 'dist' folder in  'demandplannerui').
+			utils.npmBuild('demandplannerui_npmbuild', branchName, uiRepoUrl)
+		}
 
-		build(applicationDir, releasedVersion)
-		allTests(applicationDir, releasedVersion)
-		processCodeCoverage(applicationDir, releasedVersion, utils)
-		sonarScanner(applicationDir, releasedVersion, utils)
-		allCodeQualityTests(utils)
-		dockerBuild(applicationDir, artifactName,  releasedVersion, utils)
-		utils.pushImage(artifactName, releasedVersion, dockerRegistryIP)             					// Push Image to Private Repository
-		utils.removeImages(artifactName)  																// To clean images created on Jenkins BOX
-		tagBranch(applicationDir, priorityConfigRepoUrl, releasedVersion, GIT_TAG, utils)
+		stage('SonarQube Analysis') { utils.uiCodeQualityAnalysis('demandplannerui_npmbuild', releasedVersion) }
+
+		stage("SonarQube Quality Gate") { utils.processQualityGate() }
+
+		stage('Docker Build') {
+			utils.uiDockerBuild(applicationDir, artifactName, releasedVersion)
+		}
+
+		utils.pushImage(artifactName, releasedVersion, dockerRegistryIP)										// Push Image to Private Repository
+		utils.removeImages(artifactName)  																		// To clean images created on Jenkins BOX
+		tagBranch(applicationDir, uiRepoUrl, releasedVersion, GIT_TAG, utils)
 
 		for (String devServerIP : devServerIPString.split(",")) {
+			dockerClean(artifactName, devServerIP, utils)
 			stage("deploy to DEV: ${devServerIP}"){
 				utils.stopContainer(artifactName, devServerIP)
-				dockerClean(artifactName, devServerIP, utils)											// To clean images created on DEV BOX
+				dockerClean(artifactName, devServerIP, utils)													// To clean images created on DEV BOX
 				deployImage(artifactName, releasedVersion, "${DEV_PROP_ENV}", devServerIP, utils, dockerRegistryIP)
 				subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' on ${devServerIP}"
 				bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}] on ${devServerIP}':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
@@ -95,8 +98,7 @@ node {
 
 //--------------------------------------------------------- QA PRIMARY APPROVAL CHECK BEGIN ---------------------------------------------------------
 
-echo "qaReleaseCandidate Value: ${qaReleaseCandidate}"
-if (qaReleaseCandidate?.trim() && qaReleaseCandidate.toBoolean()) {
+if (qaReleaseCandidate.toBoolean()) {
 	echo "${releasedVersion} got primary approval to deploy to QA"
 } else {
 	echo "As per Input, Not Proceeding with QA Deployment."
@@ -105,9 +107,17 @@ if (qaReleaseCandidate?.trim() && qaReleaseCandidate.toBoolean()) {
 
 //--------------------------------------------------------- QA PRIMARY APPROVAL CHECK END ---------------------------------------------------------
 
+/*
+ stage('Deploy Approval -QA ') {
+ def userInput = input(
+ id: 'deployToQA', message: 'Do you wish to promote build to QA?', ok: 'ok', parameters: [string(defaultValue: 'Approved', description: '', name: 'Deploy Approval?')])
+ echo ("Deploy Approval: " + userInput)
+ }
+ */
 
 //--------------------------------------------------------- QA  SECONDARY APPROVAL CHECK BEGIN ---------------------------------------------------------
 //Show a Jenkins pipeline stage as failed without failing the whole job
+/*
 try {
 	stage('Deploy Approval - QA') {
 		def deployOptions = 'no\nyes'
@@ -129,7 +139,9 @@ try {
 	echo "currentBuild.result: ${currentBuild.result}"
 	isQADeployApproved = false
 }
+*/
 //--------------------------------------------------------- QA SECONDARY APPROVAL CHECK END ---------------------------------------------------------
+
 
 //--------------------------------------------------------- QA  DEPLOYMENT BEGIN ---------------------------------------------------------
 if (isQADeployApproved) {
@@ -137,7 +149,7 @@ if (isQADeployApproved) {
 		Utils utils = new Utils()
 		try {
 			def workspacePath = pwd()
-			echo "workspacePath: ${workspacePath}"
+			echo "QA workspacePath: ${workspacePath}"
 			echo "artifactName: ${artifactName}"
 			echo "releasedVersion: ${releasedVersion}"
 			echo "qaServerIPString: ${qaServerIPString}"
@@ -149,14 +161,12 @@ if (isQADeployApproved) {
 			for (String qaServerIP : qaServerIPString.split(",")) {
 				stage("deploy to QA: ${qaServerIP}") {
 					utils.stopContainer(artifactName, qaServerIP)
-					dockerClean(artifactName, qaServerIP, utils)									    // To clean images created on QA BOX
+					dockerClean(artifactName, qaServerIP, utils)												//To clean images created on QA BOX
 					deployImage(artifactName, releasedVersion, "${QA_PROP_ENV}", qaServerIP, utils, dockerRegistryIP)
 					subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' on ${qaServerIP}"
 					bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}] on ${qaServerIP}':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
 					utils.sendEmailNotification(subjectText, bodyText)
 				}
-				
-
 			}
 		} catch (error) {
 			println error
@@ -169,50 +179,14 @@ if (isQADeployApproved) {
 		}
 	}
 }
+//--------------------------------------------------------- QA  DEPLOYMENT END ---------------------------------------------------------
+
+
 //--------------------------------------------------------- Utility Methods START ---------------------------------------------------------
-
-def checkout(applicationDir, branchName, priorityConfigRepoUrl, utils) {
-	stage('Git Checkout') {
-		utils.sourceCodeCheckout(applicationDir, branchName, priorityConfigRepoUrl)
-	}
-}
-
-def build(applicationDir, releasedVersion) {
-	stage ('Maven Build') {
-		dir(applicationDir) { sh "mvn clean install -Dmaven.test.skip=true -Drevision=${releasedVersion}" }
-	}
-}
-
-def allTests(applicationDir, releasedVersion) {
-	stage ('Junit Test') { dir(applicationDir) {sh "mvn test -Drevision=${releasedVersion}" }}
-}
-
-def processCodeCoverage(applicationDir, releasedVersion, utils) {
-	stage('Cobertura Code Coverage') {
-		utils.processCodeCoverage(applicationDir, releasedVersion)
-	}
-}
-
-def sonarScanner(applicationDir, releasedVersion, utils) {
-	stage('SonarQube Analysis') {
-		utils.sonarScanner(applicationDir, releasedVersion)
-	}
-}
-
-def allCodeQualityTests(utils) {
-	stage("SonarQube Quality Gate") { utils.processQualityGate() }
-}
-
-def dockerBuild(applicationDir, artifactName,  releasedVersion, utils) {
-	stage('Docker Build'){
-		utils.apiDockerBuild(applicationDir, artifactName, releasedVersion)
-	}
-}
-
-def tagBranch(applicationDir, priorityConfigRepoUrl, releasedVersion,GIT_TAG, utils) {
+def tagBranch(applicationDir, uiRepoUrl, releasedVersion,GIT_TAG, utils) {
 	if (GIT_TAG.toBoolean()) {
 		stage('Tag Branch') {
-			utils.tagBranch(applicationDir, priorityConfigRepoUrl, releasedVersion)
+			utils.tagBranch(applicationDir, uiRepoUrl, releasedVersion)
 		}
 		sh "docker images"
 	}
@@ -225,6 +199,6 @@ def dockerClean(artifactName, serverIP, utils) {
 }
 
 def deployImage(artifactName, releasedVersion, PROP_ENV, destinationIP, utils, dockerRegistryIP) {
-	utils.promotePCAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP, dockerRegistryIP)
+	utils.promoteUIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP, dockerRegistryIP)
 }
 //--------------------------------------------------------- Utility Methods END ---------------------------------------------------------

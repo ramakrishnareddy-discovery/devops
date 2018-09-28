@@ -14,8 +14,10 @@ node {
 			string(name: 'MINOR_VERSION', description: '', defaultValue: "snapshot", trim: true),
 			string(name: 'GIT_BRANCH', description: 'API Branch Name', defaultValue: "feature/dev",trim: true),
 			string(name: 'DEV_BOX_IP', description: 'comma separated servers IP', defaultValue: "10.0.3.32", trim: true),
+			string(name: 'DEV_PROP_ENV', description: 'ENV Prop Name', defaultValue: "",trim: true),
 			booleanParam(name: 'QA_RELEASE_CANDIDATE', defaultValue: true, description: 'Promote to QA or Not'),
 			string(name: 'QA_BOX_IP', description: 'comma separated servers IP', defaultValue: "10.0.31.242", trim: true),
+			string(name: 'QA_PROP_ENV', description: 'ENV Prop Name', defaultValue: "",trim: true),
 			string(name: 'PRIVATE_REPO_IP', description: 'Docker Images Private Repo', defaultValue: "10.0.31.225", trim: true),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not')
 		])
@@ -72,7 +74,7 @@ node {
 			stage("deploy to DEV: ${devServerIP}"){
 				utils.stopContainer(artifactName, devServerIP)
 				dockerClean(artifactName, devServerIP, utils)											// To clean images created on DEV BOX
-				deployImage(artifactName, releasedVersion, "dev", devServerIP, utils, dockerRegistryIP)
+				deployImage(artifactName, releasedVersion, "${DEV_PROP_ENV}", devServerIP, utils, dockerRegistryIP)
 				subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' on ${devServerIP}"
 				bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}] on ${devServerIP}':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
 				utils.sendEmailNotification(subjectText, bodyText)
@@ -145,7 +147,7 @@ if (isQADeployApproved) {
 				stage("deploy to QA: ${qaServerIP}") {
 					utils.stopContainer(artifactName, qaServerIP)
 					dockerClean(artifactName, qaServerIP, utils)												//To clean images created on QA BOX
-					deployImage(artifactName, releasedVersion, "qa", qaServerIP, utils, dockerRegistryIP)
+					deployImage(artifactName, releasedVersion, "${QA_PROP_ENV}", qaServerIP, utils, dockerRegistryIP)
 					subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' on ${qaServerIP}"
 					bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}] on ${qaServerIP}':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
 					utils.sendEmailNotification(subjectText, bodyText)
