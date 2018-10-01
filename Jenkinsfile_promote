@@ -33,6 +33,7 @@ node {
 
 		for (String promoteServerIP : promoteEnvIPString.split(",")) {
 			stage("deploy to ${promoteServerIP}"){
+				utils.pullDockerImage(artifactName, releasedVersion, promoteServerIP, dockerRegistryIP)
 				utils.stopContainer(artifactName, promoteServerIP)
 				dockerClean(artifactName, promoteServerIP, utils)											// To clean images created on PROMOTION BOX
 				deployImage(artifactName, releasedVersion, propertiesEnv, promoteServerIP, utils, dockerRegistryIP)
@@ -54,6 +55,7 @@ node {
 }
 
 //--------------------------------------------------------- Utility Methods START ---------------------------------------------------------
+
 
 def dockerClean(artifactName, serverIP, utils) {
 	utils.removeDanglingImages(artifactName, serverIP)
