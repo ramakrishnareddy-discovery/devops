@@ -33,6 +33,7 @@ node {
 
 		for (String promoteServerIP : promoteEnvIPString.split(",")) {
 			stage("deploy to ${promoteServerIP}"){
+				// If the artifactName/releasedVersion not found, throws error.
 				utils.pullDockerImage(artifactName, releasedVersion, promoteServerIP, dockerRegistryIP)
 				utils.stopContainer(artifactName, promoteServerIP)
 				dockerClean(artifactName, promoteServerIP, utils)											// To clean images created on PROMOTION BOX
