@@ -1,4 +1,5 @@
 #!/usr/bin/env sh
+# This script will create mirror of the Accenture GIT Repository i.e. copy all branches/tags to Qualcomm GIT. 
 if [ $# -eq 0 ] || [ "$1" == "-?" ] || [ "$1" == "--help" ] || ["$1" == "-h" ]
   then
     echo "Usage: `basename $0` <USERNAME> <PROJECT_NAME> <REPO_ NAME> <GITHUB_USERNAME>"
