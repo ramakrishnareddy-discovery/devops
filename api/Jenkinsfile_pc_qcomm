@@ -75,7 +75,7 @@ node {
 	
 	/*
 		stage("deploy to : ${serverIP}"){
-			utils.stopContainer(artifactName, serverIP)
+			utils.stopContainer(artifactName, serverIP, serviceAccount)
 			dockerClean(artifactName, serverIP, utils, serviceAccount)											// To clean images created on VM BOX
 			deployImage(artifactName, releasedVersion, "${ENV}", serverIP, utils, dockerRegistryIP, serviceAccount)
 			subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' on ${serverIP}"
