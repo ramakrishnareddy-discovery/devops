@@ -28,8 +28,9 @@ node {
 		def releasedVersion
 		// =========== USER DEFINED VARS ===========
 
-		if (!${GIT_BRANCH}?.trim() || !${MAJOR_VERSION}?.trim() || !${MINOR_VERSION}?.trim()) {
+		if (!GIT_BRANCH?.trim() || !MAJOR_VERSION?.trim() || !MINOR_VERSION?.trim()) {
 			error "Missing required Build Parameters"
+			error 'FAIL'
 		}
 
 		checkout(applicationDir, GIT_BRANCH, commonRepoUrl, utils)
