@@ -23,7 +23,7 @@ node {
 
 	try {
 		// =========== USER DEFINED VARS ===========
-		def promoteEnvIPString = "${PROMOTE_ENV_IP}"
+		def serverIP = "${PROMOTE_ENV_IP}"
 		def artifactName = "${APPLICATION_NAME}"
 		def releasedVersion = "${APPLICATION_VERSION}"
 		def propertiesEnv = "${ENV}"
@@ -33,18 +33,20 @@ node {
 
 		currentBuild.displayName = "${artifactName}.${releasedVersion}_BD_${env.BUILD_NUMBER}"
 
-		for (String promoteServerIP : promoteEnvIPString.split(",")) {
-			stage("deploy to ${promoteServerIP}"){
-				// If the artifactName/releasedVersion not found, throws error.
-				utils.pullDockerImage(artifactName, releasedVersion, promoteServerIP, dockerRegistryIP, serviceAccount)
-				utils.stopContainer(artifactName, promoteServerIP, serviceAccount)
-				dockerClean(artifactName, promoteServerIP, utils, serviceAccount)											// To clean images created on PROMOTION BOX
-				deployImage(artifactName, releasedVersion, propertiesEnv, promoteServerIP, utils, dockerRegistryIP, serviceAccount)
-				subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' on ${promoteServerIP}"
-				bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}] on ${promoteServerIP}':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
-				utils.sendEmailNotification(subjectText, bodyText)
-			}
+		if (!serverIP?.trim() || !propertiesEnv?.trim() || !serviceAccount?.trim() || !dockerRegistryIP?.trim()) {
+			error "Missing required Build Parameters"
+			error 'FAIL'
+		}
 
+		stage("deploy to ${serverIP}"){
+			// If the artifactName/releasedVersion not found, throws error.
+			utils.pullDockerImage(artifactName, releasedVersion, serverIP, dockerRegistryIP, serviceAccount)
+			utils.stopContainer(artifactName, serverIP, serviceAccount)
+			dockerClean(artifactName, serverIP, utils, serviceAccount)											// To clean images created on PROMOTION BOX
+			deployImage(artifactName, releasedVersion, propertiesEnv, serverIP, utils, dockerRegistryIP, serviceAccount)
+			subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' on ${serverIP}"
+			bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}] on ${serverIP}':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
+			utils.sendEmailNotification(subjectText, bodyText)
 		}
 	}catch (error) {
 		println error
