@@ -34,8 +34,8 @@ node {
 		currentBuild.displayName = "${artifactName}.${releasedVersion}_BD_${env.BUILD_NUMBER}"
 
 		if (!serverIP?.trim() || !propertiesEnv?.trim() || !serviceAccount?.trim() || !dockerRegistryIP?.trim()) {
-			error "Missing required Build Parameters"
-			error 'FAIL'
+			currentBuild.result = 'FAILURE'
+			error 'Missing required Build Parameters'
 		}
 
 		stage("deploy to ${serverIP}"){

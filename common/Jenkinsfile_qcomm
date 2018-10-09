@@ -29,8 +29,8 @@ node {
 		// =========== USER DEFINED VARS ===========
 
 		if (!GIT_BRANCH?.trim() || !MAJOR_VERSION?.trim() || !MINOR_VERSION?.trim()) {
-			error "Missing required Build Parameters"
-			error 'FAIL'
+			currentBuild.result = 'FAILURE'
+			error 'Missing required Build Parameters'
 		}
 
 		checkout(applicationDir, GIT_BRANCH, commonRepoUrl, utils)

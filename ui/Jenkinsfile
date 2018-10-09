@@ -45,8 +45,8 @@ node {
 		echo "workspacePath: ${workspacePath}"
 
 		if (!serverIP?.trim() || !GIT_BRANCH?.trim() || !ENV?.trim() || !serviceAccount?.trim() || !dockerRegistryIP?.trim() || !MAJOR_VERSION?.trim() || !MINOR_VERSION?.trim()) {
-			error "Missing required Build Parameters"
-			error 'FAIL'
+			currentBuild.result = 'FAILURE'
+			error 'Missing required Build Parameters'
 		}
 
 		stage('Git Checkout') {
