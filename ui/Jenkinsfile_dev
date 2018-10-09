@@ -10,13 +10,13 @@ node {
 		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '3']],
 		disableConcurrentBuilds(),
 		parameters([
-			//string(name: 'MAJOR_VERSION', description: '', defaultValue: "0", trim: true),
-			//string(name: 'MINOR_VERSION', description: '', defaultValue: "snapshot", trim: true),
-			string(name: 'GIT_BRANCH', description: 'UI Branch Name', defaultValue: "develop", trim: true),
-			//choice(name: 'PROP_ENV',choices: ["dev", "dev2", "qa"].join("\n"), description: 'Environment To Deploy'),
-			string(name: 'PROP_ENV', description: 'ENV Prop Name', defaultValue: "",trim: true),
-			string(name: 'DEV_BOX_IP', description: 'Comma separated servers IP', defaultValue: "10.0.3.32", trim: true),
-			string(name: 'PRIVATE_REPO_IP', description: 'Docker Images Private Repo', defaultValue: "10.0.31.225", trim: true)
+			string(name: 'MAJOR_VERSION', description: '', defaultValue: "3", trim: true),
+			string(name: 'MINOR_VERSION', description: '', defaultValue: "12-10", trim: true),
+			string(name: 'GIT_BRANCH', description: 'UI Branch Name', defaultValue: "", trim: true),
+			string(name: 'ENV', description: 'ENV Prop Name', defaultValue: "",trim: true),
+			string(name: 'VM_IP', description: 'Plese provide IP', defaultValue: "10.0.3.32", trim: true),
+			string(name: 'VM_SERVICE_ACCOUNT', description: 'Service Account User', defaultValue: "centos", trim: true),
+			string(name: 'DOCKER_PRIVATE_REGISTRY_IP', description: 'Docker Private Registry', defaultValue: "10.0.31.225", trim: true)
 		])
 	]
 	//projectProperties.add(pipelineTriggers([cron('H 21 * * *')]))
@@ -34,18 +34,18 @@ node {
 
 		def artifactName = 'demandplannerui'
 		def applicationDir = 'demandplannerui'
-		//def releasedVersion = "${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}"
-		def releasedVersion = "0.snapshot.${BUILD_NUMBER}"
+		def releasedVersion = "${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}"
 		def branchName = "${GIT_BRANCH}"
-		def devServerIPString = "${DEV_BOX_IP}"
-		dockerRegistryIP ="${PRIVATE_REPO_IP}"
+		def serverIP = "${VM_IP}"
+		dockerRegistryIP ="${DOCKER_PRIVATE_REGISTRY_IP}"
+		def serviceAccount = "${VM_SERVICE_ACCOUNT}"
 		// =========== USER DEFINED VARS ===========
 
 		currentBuild.displayName = "${artifactName}.${releasedVersion}"
 		echo "workspacePath: ${workspacePath}"
 
-		if (!devServerIPString?.trim()) {
-			error "Missing DEV server IP in Build Parameters"
+		if (!serverIP?.trim() || !${GIT_BRANCH}?.trim() || !${PROP_ENV}?.trim() || !serviceAccount?.trim() || !dockerRegistryIP?.trim() || !${MAJOR_VERSION}?.trim() || !${MINOR_VERSION}?.trim()) {
+			error "Missing required Build Parameters"
 		}
 
 		stage('Git Checkout') {
@@ -67,15 +67,13 @@ node {
 		utils.pushImage(artifactName, releasedVersion, dockerRegistryIP)										// Push Image to Private Repository
 		utils.removeImages(artifactName)  																		// To clean images created on Jenkins BOX
 
-		for (String devServerIP : devServerIPString.split(",")) {
-			stage("deploy to DEV: ${devServerIP}"){
-				utils.stopContainer(artifactName, devServerIP)
-				dockerClean(artifactName, devServerIP, utils)													// To clean images created on DEV BOX
-				deployImage(artifactName, releasedVersion, "${PROP_ENV}", devServerIP, utils, dockerRegistryIP)
-				subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' on ${devServerIP}"
-				bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}] on ${devServerIP}':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
-				utils.sendEmailNotification(subjectText, bodyText)
-			}
+		stage("deploy to : ${serverIP}"){
+			utils.stopContainer(artifactName, serverIP)
+			dockerClean(artifactName, serverIP, utils)													// To clean images created on VM BOX
+			deployImage(artifactName, releasedVersion, "${PROP_ENV}", serverIP, utils, dockerRegistryIP)
+			subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' on ${serverIP}"
+			bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}] on ${serverIP}':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
+			utils.sendEmailNotification(subjectText, bodyText)
 		}
 
 	}catch (error) {

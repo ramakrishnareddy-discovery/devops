@@ -12,8 +12,9 @@ node {
 			string(name: 'PROMOTE_ENV_IP', description: '', defaultValue: "", trim: true),
 			choice(name: 'APPLICATION_NAME',choices: ["qualcomm-ms-priorityconfig", "qualcomm-ms-demandplanner", "demandplannerui"].join("\n"), description: 'Artifact Name'),
 			string(name: 'APPLICATION_VERSION', description: '', defaultValue: "", trim: true),
-			string(name: 'PROP_ENV', description: '', defaultValue: "", trim: true),
-			string(name: 'PRIVATE_REPO_IP', description: 'Docker Images Private Repo', defaultValue: "10.0.31.225", trim: true),
+			string(name: 'ENV', description: '', defaultValue: "", trim: true),
+			string(name: 'VM_SERVICE_ACCOUNT', description: 'Service Account User', defaultValue: "centos", trim: true),
+			string(name: 'DOCKER_PRIVATE_REGISTRY_IP', description: 'Docker Private Registry', defaultValue: "10.0.31.225", trim: true),
 		])
 	]
 
@@ -25,8 +26,9 @@ node {
 		def promoteEnvIPString = "${PROMOTE_ENV_IP}"
 		def artifactName = "${APPLICATION_NAME}"
 		def releasedVersion = "${APPLICATION_VERSION}"
-		def propertiesEnv = "${PROP_ENV}"
-		def dockerRegistryIP ="${PRIVATE_REPO_IP}"
+		def propertiesEnv = "${ENV}"
+		def dockerRegistryIP ="${DOCKER_PRIVATE_REGISTRY_IP}"
+		def serviceAccount = "${VM_SERVICE_ACCOUNT}"
 		// =========== USER DEFINED VARS ===========
 
 		currentBuild.displayName = "${artifactName}.${releasedVersion}_BD_${env.BUILD_NUMBER}"
@@ -34,10 +36,10 @@ node {
 		for (String promoteServerIP : promoteEnvIPString.split(",")) {
 			stage("deploy to ${promoteServerIP}"){
 				// If the artifactName/releasedVersion not found, throws error.
-				utils.pullDockerImage(artifactName, releasedVersion, promoteServerIP, dockerRegistryIP)
-				utils.stopContainer(artifactName, promoteServerIP)
-				dockerClean(artifactName, promoteServerIP, utils)											// To clean images created on PROMOTION BOX
-				deployImage(artifactName, releasedVersion, propertiesEnv, promoteServerIP, utils, dockerRegistryIP)
+				utils.pullDockerImage(artifactName, releasedVersion, promoteServerIP, dockerRegistryIP, serviceAccount)
+				utils.stopContainer(artifactName, promoteServerIP, serviceAccount)
+				dockerClean(artifactName, promoteServerIP, utils, serviceAccount)											// To clean images created on PROMOTION BOX
+				deployImage(artifactName, releasedVersion, propertiesEnv, promoteServerIP, utils, dockerRegistryIP, serviceAccount)
 				subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' on ${promoteServerIP}"
 				bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}] on ${promoteServerIP}':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
 				utils.sendEmailNotification(subjectText, bodyText)
@@ -58,20 +60,20 @@ node {
 //--------------------------------------------------------- Utility Methods START ---------------------------------------------------------
 
 
-def dockerClean(artifactName, serverIP, utils) {
-	utils.removeDanglingImages(artifactName, serverIP)
+def dockerClean(artifactName, serverIP, utils, serviceAccount) {
+	utils.removeDanglingImages(artifactName, serverIP, serviceAccount)
 }
 
-def deployImage(artifactName, releasedVersion, PROP_ENV, destinationIP, utils, dockerRegistryIP) {
+def deployImage(artifactName, releasedVersion, ENV, destinationIP, utils, dockerRegistryIP, serviceAccount) {
 	if (artifactName == "qualcomm-ms-priorityconfig") {
 		echo 'User Chosen ${artifactName}'
-		utils.promotePCAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP, dockerRegistryIP)
+		utils.promotePCAPIToEnv(artifactName, releasedVersion, ENV, destinationIP, dockerRegistryIP, serviceAccount)
 	}else if(artifactName == "qualcomm-ms-demandplanner") {
 		echo "User Chosen ${artifactName}"
-		utils.promoteAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP, dockerRegistryIP)
+		utils.promoteDPAPIToEnv(artifactName, releasedVersion, ENV, destinationIP, dockerRegistryIP, serviceAccount)
 	}else if(artifactName == "demandplannerui") {
 		echo "User Chosen ${artifactName}"
-		utils.promoteUIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP, dockerRegistryIP)
+		utils.promoteUIToEnv(artifactName, releasedVersion, ENV, destinationIP, dockerRegistryIP, serviceAccount)
 	}
 }
 //--------------------------------------------------------- Utility Methods END ---------------------------------------------------------

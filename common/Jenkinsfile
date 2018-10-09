@@ -1,20 +1,15 @@
 #!/usr/bin/env groovy
 @Library('JenkinsSharedLibrary') _
 
-// =========== GLOBAL VARS ===========
-def artifactName, releasedVersion
-// =========== GLOBAL VARS ===========
-
 node {
 	properties([
 		[$class: 'BuildDiscarderProperty', strategy:
 			[$class: 'LogRotator', numToKeepStr: '3']],
 		disableConcurrentBuilds(),
 		parameters([
-			string(name: 'MAJOR_VERSION', description: '', defaultValue: "0", trim: true),
-			string(name: 'MINOR_VERSION', description: '', defaultValue: "snapshot", trim: true),
-			string(name: 'GIT_BRANCH', description: ' Branch Name', defaultValue: "feature/dev", trim: true),
-			booleanParam(name: 'GIT_IMAGE_PUSH', defaultValue: false,	description: 'Save image to a tar archive'),
+			string(name: 'MAJOR_VERSION', description: '', defaultValue: "3", trim: true),
+			string(name: 'MINOR_VERSION', description: '', defaultValue: "0", trim: true),
+			string(name: 'GIT_BRANCH', description: ' Branch Name', defaultValue: "feature/rel2", trim: true),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, 	description: 'Tagging required or not')
 		]),
 		//pipelineTriggers([ cron('H 6,11 * * *') ])
@@ -30,32 +25,35 @@ node {
 		def workspacePath = pwd()
 		def commonRepoUrl = "ssh://git@innersource.accenture.com/appq/common.git"
 		def applicationDir = "common"
-		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_common.git'
-
-		// "/product/jenkins" folder should exist and have jenkins user permissions.
-		distroDirPath =  "/product/jenkins/distro_common"
+		def releasedVersion
 		// =========== USER DEFINED VARS ===========
-		checkout(applicationDir, GIT_BRANCH, commonRepoUrl, distroDirPath, distroRepoUrl, utils)
 
-		//checkout(applicationDir, commonRepoUrl, GIT_BRANCH, utils)
+		if (!${GIT_BRANCH}?.trim() || !${MAJOR_VERSION}?.trim() || !${MINOR_VERSION}?.trim()) {
+			error "Missing required Build Parameters"
+		}
+		
+		checkout(applicationDir, GIT_BRANCH, commonRepoUrl, utils)
 
 		// Since artifactName and releasedVersion fetching from POM.xml, should execute after cloning the repo.
-		artifactName = utils.getArtifact(applicationDir)
+		def artifactName = utils.getArtifact(applicationDir)
 
-		dir(applicationDir) {
-			releasedVersion = sh (
-					script: """ mvn help:evaluate -Dexpression=project.version -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER} | grep -e '^[^\\[]'  """,
-					returnStdout: true
-					).trim()
-		}
-		echo "releasedVersion: ${releasedVersion}"
+		// Keep below code for future purpose
+		/*
+		 dir(applicationDir) {
+		 releasedVersion = sh (
+		 script: """ mvn help:evaluate -Dexpression=project.version -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER} | grep -e '^[^\\[]'  """,
+		 returnStdout: true
+		 ).trim()
+		 }
+		 echo "releasedVersion: ${releasedVersion}"
+		 */
 
+		releasedVersion = "${MAJOR_VERSION}.${MINOR_VERSION}.0"
 		currentBuild.displayName = "${artifactName}.${releasedVersion}"
 
-		build(applicationDir)
-		sonarScanner(applicationDir)
+		build(applicationDir, releasedVersion)
+		sonarScanner(applicationDir, releasedVersion, utils)
 		allCodeQualityTests(utils)
-		saveArtifact(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils)
 		tagBranch(applicationDir, commonRepoUrl, releasedVersion,GIT_TAG, utils)
 		subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
 		bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
@@ -70,40 +68,26 @@ node {
 	}
 }
 
-def checkout(applicationDir, commonRepoUrl, branchName, utils) {
-	stage('Git Checkout') { utils.commonAppCheckout(applicationDir, commonRepoUrl, branchName) }
-}
-
-def checkout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl, utils) {
+def checkout(applicationDir, branchName, commonRepoUrl, utils) {
 	stage('Git Checkout') {
-		utils.sourceCodeCheckout(applicationDir, branchName, apiRepoUrl, distroDirPath, distroRepoUrl)
+		utils.sourceCodeCheckout(applicationDir, branchName, commonRepoUrl)
 	}
 }
 
-def build(applicationDir){
+def build(applicationDir, releasedVersion){
 	stage ('Maven Build') {
-		dir(applicationDir) { sh "mvn clean install -Dmaven.test.skip=true -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}" }
+		dir(applicationDir) { sh "mvn clean install -Dmaven.test.skip=true -Drevision=${releasedVersion}" }
 	}
 }
 
-def sonarScanner(applicationDir) {
-	//********* Configure a webhook in your SonarQube server pointing to <your Jenkins instance>/sonarqube-webhook/ ********
+def sonarScanner(applicationDir, releasedVersion, utils) {
 	stage('SonarQube Analysis') {
-		dir(applicationDir) {
-			withSonarQubeEnv('SonarQube_V7') { // SonarQube taskId is automatically attached to the pipeline context
-				sh "mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.3.0.603:sonar -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}" }
-		}
+		utils.sonarScanner(applicationDir, releasedVersion)
 	}
 }
 
 def allCodeQualityTests(utils) {
 	stage("SonarQube Quality Gate") { utils.processQualityGate() }
-}
-
-def saveArtifact(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils) {
-	stage('Save Artifact To Repo') {
-		utils.saveCommmonArtifact(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH)
-	}
 }
 
 def tagBranch(applicationDir, commonRepoUrl, releasedVersion,GIT_TAG, utils) {

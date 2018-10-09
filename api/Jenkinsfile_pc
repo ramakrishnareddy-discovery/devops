@@ -10,13 +10,13 @@ node {
 		[$class: 'BuildDiscarderProperty',strategy: [$class: 'LogRotator', numToKeepStr: '3']],
 		disableConcurrentBuilds(),
 		parameters([
-			string(name: 'MAJOR_VERSION', description: '', defaultValue: "0", trim: true),
-			string(name: 'MINOR_VERSION', description: '', defaultValue: "snapshot", trim: true),
-			string(name: 'GIT_BRANCH', description: 'PriorityConfig Branch Name', defaultValue: "feature/dev",trim: true),
-			string(name: 'PROP_ENV', description: 'Properties Environment', defaultValue: "dev",trim: true),
-			//choice(name: 'PROP_ENV',choices: ["dev", "dev2", "qa"].join("\n"), description: 'Environment To Deploy'),
-			string(name: 'DEV_BOX_IP', description: 'comma separated servers IP', defaultValue: "ec2dp-dev1.qualcomm.com", trim: true),
-			string(name: 'PRIVATE_REPO_IP', description: 'Docker Images Private Repo', defaultValue: "ec2dp-devops2.qualcomm.com", trim: true)
+			string(name: 'MAJOR_VERSION', description: '', defaultValue: "3", trim: true),
+			string(name: 'MINOR_VERSION', description: '', defaultValue: "12-10", trim: true),
+			string(name: 'GIT_BRANCH', description: 'API Branch Name', defaultValue: "",trim: true),
+			string(name: 'ENV', description: 'Properties Environment', defaultValue: "",trim: true),
+			string(name: 'VM_IP', description: 'Plese provide IP', defaultValue: "10.0.3.32", trim: true),
+			string(name: 'VM_SERVICE_ACCOUNT', description: 'Service Account User', defaultValue: "centos", trim: true),
+			string(name: 'DOCKER_PRIVATE_REGISTRY_IP', description: 'Docker Private Registry', defaultValue: "10.0.31.225", trim: true)
 		])
 	]
 	//projectProperties.add(pipelineTriggers([upstream(threshold: hudson.model.Result.SUCCESS,upstreamProjects: "common")]))
@@ -31,33 +31,36 @@ node {
 		def mvnHome = tool name: "Maven_V3"
 		env.PATH = "${mvnHome}/bin:${env.PATH}"
 
-		//def priorityConfigRepoUrl = 'ssh://git@innersource.accenture.com/appq/priorityconfigapi.git'
-		def priorityConfigRepoUrl = 'https://A18591DIRPdp@innersource.accenture.com/scm/appq/priorityconfigapi.git'
+		def priorityConfigRepoUrl = 'ssh://git@innersource.accenture.com/appq/priorityconfigapi.git'
+
 		def applicationDir = "priorityconfig"
-		def devServerIPString = "${DEV_BOX_IP}"
-		dockerRegistryIP ="${PRIVATE_REPO_IP}"
+		def serverIP = "${VM_IP}"
+		dockerRegistryIP ="${DOCKER_PRIVATE_REGISTRY_IP}"
 		def releasedVersion
+		def serviceAccount = "${VM_SERVICE_ACCOUNT}"
 		// =========== USER DEFINED VARS ===========
 
-		if (!devServerIPString?.trim()) {
-			error "Missing DEV server IP in Build Parameters"
+		if (!serverIP?.trim() || !${GIT_BRANCH}?.trim() || !${ENV}?.trim() || !serviceAccount?.trim() || !dockerRegistryIP?.trim() || !${MAJOR_VERSION}?.trim() || !${MINOR_VERSION}?.trim()) {
+			error "Missing required Build Parameters"
 		}
+
 
 		checkout(applicationDir, GIT_BRANCH, priorityConfigRepoUrl, utils)
 		// Since artifactName and releasedVersion fetching from POM.xml, should execute after cloning the repo.
 		def artifactName = utils.getArtifact(applicationDir)
 
-		
+		// Keep below code for future purpose
+		/*
 		 dir(applicationDir) {
-			releasedVersion = sh (
-			script: """ mvn help:evaluate -Dexpression=project.version -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER} | grep -e '^[^\\[]'  """,
-			returnStdout: true
-			).trim()
+		 releasedVersion = sh (
+		 script: """ mvn help:evaluate -Dexpression=project.version -Drevision=${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER} | grep -e '^[^\\[]'  """,
+		 returnStdout: true
+		 ).trim()
 		 }
 		 echo "releasedVersion: ${releasedVersion}"
-		 
+		 */
 
-		//releasedVersion = "0.snapshot.${BUILD_NUMBER}"
+		releasedVersion = "${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}"
 		currentBuild.displayName = "${artifactName}.${releasedVersion}"
 
 		build(applicationDir, releasedVersion)
@@ -68,19 +71,16 @@ node {
 		dockerBuild(applicationDir, artifactName,  releasedVersion, utils)
 		utils.pushImage(artifactName, releasedVersion, dockerRegistryIP)             					// Push Image to Private Repository
 		utils.removeImages(artifactName)  																// To clean images created on Jenkins BOX
-	
-	/*
-		for (String devServerIP : devServerIPString.split(",")) {
-			stage("deploy to DEV: ${devServerIP}"){
-				utils.stopContainer(artifactName, devServerIP)
-				dockerClean(artifactName, devServerIP, utils)											// To clean images created on DEV BOX
-				deployImage(artifactName, releasedVersion, "${PROP_ENV}", devServerIP, utils, dockerRegistryIP)
-				subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' on ${devServerIP}"
-				bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}] on ${devServerIP}':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
-				utils.sendEmailNotification(subjectText, bodyText)
-			}
+
+		stage("deploy to : ${serverIP}"){
+			utils.stopContainer(artifactName, serverIP)
+			dockerClean(artifactName, serverIP, utils, serviceAccount)											// To clean images created on VM BOX
+			deployImage(artifactName, releasedVersion, "${ENV}", serverIP, utils, dockerRegistryIP, serviceAccount)
+			subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' on ${serverIP}"
+			bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}] on ${serverIP}':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
+			utils.sendEmailNotification(subjectText, bodyText)
 		}
-	*/
+
 	}catch (error) {
 		println error
 		// If there was an exception thrown, the build failed
@@ -132,13 +132,11 @@ def dockerBuild(applicationDir, artifactName,  releasedVersion, utils) {
 	}
 }
 
-def dockerClean(artifactName, serverIP, utils) {
-	//stage('Docker Clean'){
-	utils.removeDanglingImages(artifactName, serverIP)
-	//}
+def dockerClean(artifactName, serverIP, utils, serviceAccount) {
+	utils.removeDanglingImages(artifactName, serverIP, serviceAccount)
 }
 
-def deployImage(artifactName, releasedVersion, PROP_ENV, destinationIP, utils, dockerRegistryIP) {
-	utils.promotePCAPIToEnv(artifactName, releasedVersion, PROP_ENV, destinationIP, dockerRegistryIP)
+def deployImage(artifactName, releasedVersion, ENV, destinationIP, utils, dockerRegistryIP, serviceAccount) {
+	utils.promotePCAPIToEnv(artifactName, releasedVersion, ENV, destinationIP, dockerRegistryIP, serviceAccount)
 }
 //--------------------------------------------------------- Utility Methods END ---------------------------------------------------------
