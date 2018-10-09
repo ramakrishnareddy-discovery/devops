@@ -9,7 +9,7 @@ node {
 		parameters([
 			string(name: 'MAJOR_VERSION', description: '', defaultValue: "3", trim: true),
 			string(name: 'MINOR_VERSION', description: '', defaultValue: "0", trim: true),
-			string(name: 'GIT_BRANCH', description: ' Branch Name', defaultValue: "feature/rel2", trim: true),
+			string(name: 'GIT_BRANCH', description: ' Branch Name', defaultValue: "", trim: true),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, 	description: 'Tagging required or not')
 		]),
 		//pipelineTriggers([ cron('H 6,11 * * *') ])
