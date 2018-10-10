@@ -70,9 +70,9 @@ node {
 
 	/*
 		stage("deploy to : ${serverIP}"){
-			utils.stopContainer(artifactName, serverIP)
-			dockerClean(artifactName, serverIP, utils)													// To clean images created on VM BOX
-			deployImage(artifactName, releasedVersion, "${ENV}", serverIP, utils, dockerRegistryIP)
+			utils.stopContainer(artifactName, serverIP, serviceAccount)
+			dockerClean(artifactName, serverIP, utils, serviceAccount)													// To clean images created on VM BOX
+			deployImage(artifactName, releasedVersion, "${ENV}", serverIP, utils, dockerRegistryIP, serviceAccount)
 			subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' on ${serverIP}"
 			bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}] on ${serverIP}':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
 			utils.sendEmailNotification(subjectText, bodyText)
@@ -90,13 +90,11 @@ node {
 }
 
 //--------------------------------------------------------- Utility Methods START ---------------------------------------------------------
-def dockerClean(artifactName, serverIP, utils) {
-	//stage('Docker Clean'){
-	utils.removeDanglingImages(artifactName, serverIP)
-	//}
+def dockerClean(artifactName, serverIP, utils, serviceAccount) {
+	utils.removeDanglingImages(artifactName, serverIP, serviceAccount)
 }
 
-def deployImage(artifactName, releasedVersion, ENV, destinationIP, utils, dockerRegistryIP) {
-	utils.promoteUIToEnv(artifactName, releasedVersion, ENV, destinationIP, dockerRegistryIP)
+def deployImage(artifactName, releasedVersion, ENV, destinationIP, utils, dockerRegistryIP, serviceAccount) {
+	utils.promoteUIToEnv(artifactName, releasedVersion, ENV, destinationIP, dockerRegistryIP, serviceAccount)
 }
 //--------------------------------------------------------- Utility Methods END ---------------------------------------------------------
