@@ -35,7 +35,7 @@ node {
 		def applicationDir = "demandplannerapi"
 		def serverIP = "${VM_IP}"
 		dockerRegistryIP ="${DOCKER_PRIVATE_REGISTRY_IP}"
-		def releasedVersio serviceARegistrynt = "${VM_SERVICE_ACCOUNT}"
+		def serviceAccount = "${VM_SERVICE_ACCOUNT}"
 		// =========== USER DEFINED VARS ===========
 
 		if (!serverIP?.trim() || !GIT_BRANCH?.trim() || !ENV?.trim() || !serviceAccount?.trim() || !dockerRegistryIP?.trim() || !MAJOR_VERSION?.trim() || !MINOR_VERSION?.trim()) {
