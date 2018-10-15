@@ -55,7 +55,7 @@ node {
 		 echo "releasedVersion: ${releasedVersion}"
 		 */
 		releasedVersion = "${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}"
-		currentBuild.displayName = "${artifactName}.${releasedVersion}"
+		currentBuild.displayName = "${artifactName}:${releasedVersion}"
 
 		build(applicationDir, releasedVersion)
 		allTests(applicationDir, releasedVersion)

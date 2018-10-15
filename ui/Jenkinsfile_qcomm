@@ -37,7 +37,7 @@ node {
 		dockerRegistryIP ="${DOCKER_PRIVATE_REGISTRY_IP}"
 		// =========== USER DEFINED VARS ===========
 
-		currentBuild.displayName = "${artifactName}.${releasedVersion}"
+		currentBuild.displayName = "${artifactName}:${releasedVersion}"
 		echo "workspacePath: ${workspacePath}"
 
 		if (!GIT_BRANCH?.trim() || !dockerRegistryIP?.trim() || !MAJOR_VERSION?.trim() || !MINOR_VERSION?.trim()) {

@@ -41,7 +41,7 @@ node {
 		def serviceAccount = "${VM_SERVICE_ACCOUNT}"
 		// =========== USER DEFINED VARS ===========
 
-		currentBuild.displayName = "${artifactName}.${releasedVersion}"
+		currentBuild.displayName = "${artifactName}:${releasedVersion}"
 		echo "workspacePath: ${workspacePath}"
 
 		if (!serverIP?.trim() || !GIT_BRANCH?.trim() || !ENV?.trim() || !serviceAccount?.trim() || !dockerRegistryIP?.trim() || !MAJOR_VERSION?.trim() || !MINOR_VERSION?.trim()) {

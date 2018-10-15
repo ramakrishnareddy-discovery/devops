@@ -49,7 +49,7 @@ node {
 		 */
 
 		releasedVersion = "${MAJOR_VERSION}.${MINOR_VERSION}.0"
-		currentBuild.displayName = "${artifactName}.${releasedVersion}"
+		currentBuild.displayName = "${artifactName}:${releasedVersion}"
 
 		build(applicationDir, releasedVersion)
 		sonarScanner(applicationDir, releasedVersion, utils)
