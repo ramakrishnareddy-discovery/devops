@@ -13,9 +13,7 @@ node {
 			string(name: 'MAJOR_VERSION', description: '', defaultValue: "0", trim: true),
 			string(name: 'MINOR_VERSION', description: '', defaultValue: "0", trim: true),
 			string(name: 'GIT_BRANCH', description: 'UI Branch Name', defaultValue: "", trim: true),
-			string(name: 'ENV', description: 'ENV Prop Name', defaultValue: "", trim: true),
-			string(name: 'VM_IP', description: 'Plese provide IP', defaultValue: "ec2dp-dev1.qualcomm.com", trim: true),
-			string(name: 'VM_SERVICE_ACCOUNT', description: 'Service Account User', defaultValue: "", trim: true),
+			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not'),
 			string(name: 'DOCKER_PRIVATE_REGISTRY_IP', description: 'Docker Private Registry', defaultValue: "ec2dp-devops2.qualcomm.com", trim: true)
 		])
 	]
@@ -36,15 +34,13 @@ node {
 		def applicationDir = 'demandplannerui'
 		def releasedVersion = "${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}"
 		def branchName = "${GIT_BRANCH}"
-		def serverIP = "${VM_IP}"
 		dockerRegistryIP ="${DOCKER_PRIVATE_REGISTRY_IP}"
-		def serviceAccount = "${VM_SERVICE_ACCOUNT}"
 		// =========== USER DEFINED VARS ===========
 
 		currentBuild.displayName = "${artifactName}.${releasedVersion}"
 		echo "workspacePath: ${workspacePath}"
 
-		if (!serverIP?.trim() || !GIT_BRANCH?.trim() || !ENV?.trim() || !serviceAccount?.trim() || !dockerRegistryIP?.trim() || !MAJOR_VERSION?.trim() || !MINOR_VERSION?.trim()) {
+		if (!GIT_BRANCH?.trim() || !dockerRegistryIP?.trim() || !MAJOR_VERSION?.trim() || !MINOR_VERSION?.trim()) {
 			currentBuild.result = 'FAILURE'
 			error 'Missing required Build Parameters'
 		}
@@ -67,17 +63,7 @@ node {
 		}
 		utils.pushImage(artifactName, releasedVersion, dockerRegistryIP)										// Push Image to Private Repository
 		utils.removeImages(artifactName)  																		// To clean images created on Jenkins BOX
-
-	/*
-		stage("deploy to : ${serverIP}"){
-			utils.stopContainer(artifactName, serverIP, serviceAccount)
-			dockerClean(artifactName, serverIP, utils, serviceAccount)													// To clean images created on VM BOX
-			deployImage(artifactName, releasedVersion, "${ENV}", serverIP, utils, dockerRegistryIP, serviceAccount)
-			subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' on ${serverIP}"
-			bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}] on ${serverIP}':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
-			utils.sendEmailNotification(subjectText, bodyText)
-		}
-	*/
+		tagBranch(applicationDir, uiRepoUrl, releasedVersion, GIT_TAG, utils)
 	}catch (error) {
 		println error
 		// If there was an exception thrown, the build failed
@@ -90,11 +76,10 @@ node {
 }
 
 //--------------------------------------------------------- Utility Methods START ---------------------------------------------------------
-def dockerClean(artifactName, serverIP, utils, serviceAccount) {
-	utils.removeDanglingImages(artifactName, serverIP, serviceAccount)
-}
-
-def deployImage(artifactName, releasedVersion, ENV, destinationIP, utils, dockerRegistryIP, serviceAccount) {
-	utils.promoteUIToEnv(artifactName, releasedVersion, ENV, destinationIP, dockerRegistryIP, serviceAccount)
-}
-//--------------------------------------------------------- Utility Methods END ---------------------------------------------------------
+def tagBranch(applicationDir, uiRepoUrl, releasedVersion,GIT_TAG, utils) {
+	if (GIT_TAG.toBoolean()) {
+		stage('Tag Branch') {
+			utils.tagBranch(applicationDir, uiRepoUrl, releasedVersion)
+		}
+	}
+}//--------------------------------------------------------- Utility Methods END -----------------------------------------------------------
