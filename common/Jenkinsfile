@@ -65,9 +65,11 @@ node {
 		subjectText = "JENKINS Notification : FAILED Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
 		bodyText = """ <p>FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
 		utils.sendEmailNotification(subjectText, bodyText)
+		throw error
 	}
 }
 
+//--------------------------------------------------------- Utility Methods START ---------------------------------------------------------
 def checkout(applicationDir, branchName, commonRepoUrl, utils) {
 	stage('Git Checkout') {
 		utils.sourceCodeCheckout(applicationDir, branchName, commonRepoUrl)
@@ -97,4 +99,5 @@ def tagBranch(applicationDir, commonRepoUrl, releasedVersion,GIT_TAG, utils) {
 		}
 	}
 }
+//--------------------------------------------------------- Utility Methods END -----------------------------------------------------------
 

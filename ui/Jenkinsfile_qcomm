@@ -61,9 +61,9 @@ node {
 		stage('Docker Build') {
 			utils.uiDockerBuild(applicationDir, artifactName, releasedVersion)
 		}
+		tagBranch(applicationDir, uiRepoUrl, releasedVersion, GIT_TAG, utils)
 		utils.pushImage(artifactName, releasedVersion, dockerRegistryIP)										// Push Image to Private Repository
 		utils.removeImages(artifactName)  																		// To clean images created on Jenkins BOX
-		tagBranch(applicationDir, uiRepoUrl, releasedVersion, GIT_TAG, utils)
 	}catch (error) {
 		println error
 		// If there was an exception thrown, the build failed
@@ -82,4 +82,5 @@ def tagBranch(applicationDir, uiRepoUrl, releasedVersion,GIT_TAG, utils) {
 			utils.tagBranch(applicationDir, uiRepoUrl, releasedVersion)
 		}
 	}
-}//--------------------------------------------------------- Utility Methods END -----------------------------------------------------------
+}
+//--------------------------------------------------------- Utility Methods END -----------------------------------------------------------

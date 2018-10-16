@@ -13,6 +13,7 @@ node {
 			string(name: 'MAJOR_VERSION', description: '', defaultValue: "3", trim: true),
 			string(name: 'MINOR_VERSION', description: '', defaultValue: "12-10", trim: true),
 			string(name: 'GIT_BRANCH', description: 'UI Branch Name', defaultValue: "", trim: true),
+			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not'),
 			string(name: 'ENV', description: 'ENV Prop Name', defaultValue: "",trim: true),
 			string(name: 'VM_IP', description: 'Plese provide IP', defaultValue: "10.0.3.32", trim: true),
 			string(name: 'VM_SERVICE_ACCOUNT', description: 'Service Account User', defaultValue: "centos", trim: true),
@@ -65,9 +66,11 @@ node {
 		stage('Docker Build') {
 			utils.uiDockerBuild(applicationDir, artifactName, releasedVersion)
 		}
+		
+		tagBranch(applicationDir, uiRepoUrl, releasedVersion, GIT_TAG, utils)
 		utils.pushImage(artifactName, releasedVersion, dockerRegistryIP)										// Push Image to Private Repository
 		utils.removeImages(artifactName)  																		// To clean images created on Jenkins BOX
-
+		
 		stage("deploy to : ${serverIP}"){
 			utils.stopContainer(artifactName, serverIP, serviceAccount)
 			dockerClean(artifactName, serverIP, utils, serviceAccount)													// To clean images created on VM BOX
@@ -89,6 +92,14 @@ node {
 }
 
 //--------------------------------------------------------- Utility Methods START ---------------------------------------------------------
+def tagBranch(applicationDir, uiRepoUrl, releasedVersion,GIT_TAG, utils) {
+	if (GIT_TAG.toBoolean()) {
+		stage('Tag Branch') {
+			utils.tagBranch(applicationDir, uiRepoUrl, releasedVersion)
+		}
+	}
+}
+
 def dockerClean(artifactName, serverIP, utils, serviceAccount) {
 	utils.removeDanglingImages(artifactName, serverIP, serviceAccount)
 }

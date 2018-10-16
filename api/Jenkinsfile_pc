@@ -13,6 +13,7 @@ node {
 			string(name: 'MAJOR_VERSION', description: '', defaultValue: "3", trim: true),
 			string(name: 'MINOR_VERSION', description: '', defaultValue: "12-10", trim: true),
 			string(name: 'GIT_BRANCH', description: 'API Branch Name', defaultValue: "",trim: true),
+			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not'),
 			string(name: 'ENV', description: 'Properties Environment', defaultValue: "",trim: true),
 			string(name: 'VM_IP', description: 'Plese provide IP', defaultValue: "10.0.3.32", trim: true),
 			string(name: 'VM_SERVICE_ACCOUNT', description: 'Service Account User', defaultValue: "centos", trim: true),
@@ -70,6 +71,7 @@ node {
 		sonarScanner(applicationDir, releasedVersion, utils)
 		allCodeQualityTests(utils)
 		dockerBuild(applicationDir, artifactName,  releasedVersion, utils)
+		tagBranch(applicationDir, priorityConfigRepoUrl, releasedVersion, GIT_TAG, utils)
 		utils.pushImage(artifactName, releasedVersion, dockerRegistryIP)             					// Push Image to Private Repository
 		utils.removeImages(artifactName)  																// To clean images created on Jenkins BOX
 
@@ -125,6 +127,14 @@ def sonarScanner(applicationDir, releasedVersion, utils) {
 
 def allCodeQualityTests(utils) {
 	stage("SonarQube Quality Gate") { utils.processQualityGate() }
+}
+
+def tagBranch(applicationDir, priorityConfigRepoUrl, releasedVersion, GIT_TAG, utils) {
+	if (GIT_TAG.toBoolean()) {
+		stage('Tag Branch') {
+			utils.tagBranch(applicationDir, priorityConfigRepoUrl, releasedVersion)
+		}
+	}
 }
 
 def dockerBuild(applicationDir, artifactName,  releasedVersion, utils) {
