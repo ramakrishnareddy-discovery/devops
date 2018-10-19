@@ -13,6 +13,7 @@ node {
 			string(name: 'MAJOR_VERSION', description: '', defaultValue: "3", trim: true),
 			string(name: 'MINOR_VERSION', description: '', defaultValue: "12-10", trim: true),
 			string(name: 'GITHUB_USER_NAME', description: 'qualcomm git hub user name', defaultValue: "c-rsatti", trim: true),
+			dynamic-string(name: 'GITHUB_USER_NAME', description: 'qualcomm git hub user name', defaultValue: "git", trim: true),
 			string(name: 'GIT_BRANCH', description: 'API Branch Name', defaultValue: "",trim: true),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not'),
 			string(name: 'DOCKER_PRIVATE_REGISTRY_IP', description: 'Docker Private Registry', defaultValue: "ec2dp-devops2.qualcomm.com", trim: true)
