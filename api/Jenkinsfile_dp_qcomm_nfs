@@ -15,6 +15,9 @@ node {
 			string(name: 'GITHUB_USER_NAME', description: 'qualcomm git hub user name', defaultValue: "c-rsatti", trim: true),
 			string(name: 'GIT_BRANCH', description: 'API Branch Name', defaultValue: "",trim: true),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not'),
+			string(name: 'ENV', description: 'Properties Environment', defaultValue: "dev",trim: true),
+			string(name: 'VM_IP', description: 'Plese provide IP', defaultValue: "ec2dp-dev1.qualcomm.com", trim: true),
+			string(name: 'VM_SERVICE_ACCOUNT', description: 'Service Account User', defaultValue: "", trim: true),
 			string(name: 'DOCKER_PRIVATE_REGISTRY_IP', description: 'Docker Private Registry', defaultValue: "ec2dp-devops2.qualcomm.com", trim: true)
 		])
 	]
@@ -32,10 +35,12 @@ node {
 
 		def apiRepoUrl = "https://A18591DIRPdp@innersource.accenture.com/scm/appq/demandplannerapi.git"
 		def applicationDir = "demandplannerapi"
+		def serverIP = "${VM_IP}"
 		dockerRegistryIP ="${DOCKER_PRIVATE_REGISTRY_IP}"
+		def serviceAccount = "${VM_SERVICE_ACCOUNT}"
 		// =========== USER DEFINED VARS ===========
 
-		if (!GIT_BRANCH?.trim() || !dockerRegistryIP?.trim() || !MAJOR_VERSION?.trim() || !MINOR_VERSION?.trim()) {
+		if (!serverIP?.trim() || !GIT_BRANCH?.trim() || !ENV?.trim() || !serviceAccount?.trim() || !dockerRegistryIP?.trim() || !MAJOR_VERSION?.trim() || !MINOR_VERSION?.trim()) {
 			currentBuild.result = 'FAILURE'
 			error 'Missing required Build Parameters'
 		}
@@ -66,8 +71,21 @@ node {
 		allCodeQualityTests(utils)
 		dockerBuild(applicationDir, artifactName,  releasedVersion, utils)
 		tagBranch(applicationDir, apiRepoUrl, releasedVersion, GIT_TAG, utils)
-		utils.pushImage(artifactName, releasedVersion, dockerRegistryIP)             					// Push Image to Private Repository
+		saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils)
+
+		//utils.pushImage(artifactName, releasedVersion, dockerRegistryIP)             					// Push Image to Private Repository
+		
 		utils.removeImages(artifactName)  																// To clean images created on Jenkins BOX
+	/*	
+		stage("deploy to : ${serverIP}") {
+			utils.stopContainer(artifactName, serverIP, serviceAccount)
+			dockerClean(artifactName, serverIP, utils, serviceAccount)											// To clean images created on VM BOX
+			deployImage(artifactName, releasedVersion, "${ENV}", serverIP, utils, dockerRegistryIP, serviceAccount)
+			subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' on ${serverIP}"
+			bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}] on ${serverIP}':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
+			utils.sendEmailNotification(subjectText, bodyText)
+		}
+	*/	
 	}catch (error) {
 		println error
 		// If there was an exception thrown, the build failed
@@ -118,6 +136,12 @@ def dockerBuild(applicationDir, artifactName,  releasedVersion, utils) {
 	}
 }
 
+def saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH, utils) {
+	stage('Save Image to Tar Archive') {
+		utils.saveImage(applicationDir, distroDirPath, artifactName, releasedVersion, GIT_IMAGE_PUSH)
+	}
+}
+
 def tagBranch(applicationDir, apiRepoUrl, releasedVersion, GIT_TAG, utils) {
 	if (GIT_TAG.toBoolean()) {
 		stage('Tag Branch') {
@@ -126,4 +150,11 @@ def tagBranch(applicationDir, apiRepoUrl, releasedVersion, GIT_TAG, utils) {
 	}
 }
 
+def dockerClean(artifactName, serverIP, utils, serviceAccount) {
+	utils.removeDanglingImages(artifactName, serverIP, serviceAccount)
+}
+
+def deployImage(artifactName, releasedVersion, ENV, destinationIP, utils, dockerRegistryIP, serviceAccount) {
+	utils.promoteDPAPIToEnv(artifactName, releasedVersion, ENV, destinationIP, dockerRegistryIP, serviceAccount)
+}
 //--------------------------------------------------------- Utility Methods END ---------------------------------------------------------
