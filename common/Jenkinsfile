@@ -28,6 +28,13 @@ node {
 		def releasedVersion
 		// =========== USER DEFINED VARS ===========
 		
+		// print a debug message which can be useful when things don't work
+		echo """Job Parameters:
+		MAJOR_VERSION                : ${MAJOR_VERSION}
+		MINOR_VERSION                : ${MINOR_VERSION}
+		GIT_BRANCH	                 : ${GIT_BRANCH}
+		GIT_TAG                      : ${GIT_TAG}"""
+
 		if (!GIT_BRANCH?.trim() || !MAJOR_VERSION?.trim() || !MINOR_VERSION?.trim()) {
 			currentBuild.result = 'FAILURE'
 			error 'Missing required Build Parameters'

@@ -33,6 +33,15 @@ node {
 
 		currentBuild.displayName = "${artifactName}.${releasedVersion}_BD_${env.BUILD_NUMBER}"
 
+		// print a debug message which can be useful when things don't work
+		echo """Job Parameters:
+		PROMOTE_ENV_IP               : ${serverIP}
+		APPLICATION_NAME             : ${artifactName}
+		APPLICATION_VERSION	         : ${releasedVersion}
+		ENV                          : ${propertiesEnv}
+		VM_SERVICE_ACCOUNT           : ${serviceAccount}
+		DOCKER_PRIVATE_REGISTRY_IP   : ${dockerRegistryIP}"""
+
 		if (!serverIP?.trim() || !propertiesEnv?.trim() || !serviceAccount?.trim() || !dockerRegistryIP?.trim()) {
 			currentBuild.result = 'FAILURE'
 			error 'Missing required Build Parameters'

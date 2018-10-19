@@ -45,6 +45,20 @@ node {
 		currentBuild.displayName = "${artifactName}:${releasedVersion}"
 		echo "workspacePath: ${workspacePath}"
 
+
+		// print a debug message which can be useful when things don't work
+		echo """Job Parameters:
+		MAJOR_VERSION                : ${MAJOR_VERSION}
+		MINOR_VERSION                : ${MINOR_VERSION}
+		GIT_BRANCH	                 : ${GIT_BRANCH}
+		GIT_TAG                      : ${GIT_TAG}
+		
+		ENV                          : ${ENV}
+		VM_IP                        : ${serverIP}
+		
+		VM_SERVICE_ACCOUNT           : ${serviceAccount}
+		DOCKER_PRIVATE_REGISTRY_IP   : ${dockerRegistryIP}"""
+		
 		if (!serverIP?.trim() || !GIT_BRANCH?.trim() || !ENV?.trim() || !serviceAccount?.trim() || !dockerRegistryIP?.trim() || !MAJOR_VERSION?.trim() || !MINOR_VERSION?.trim()) {
 			currentBuild.result = 'FAILURE'
 			error 'Missing required Build Parameters'
