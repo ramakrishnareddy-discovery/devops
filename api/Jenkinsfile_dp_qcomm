@@ -68,6 +68,9 @@ node {
 		tagBranch(applicationDir, apiRepoUrl, releasedVersion, GIT_TAG, utils)
 		utils.pushImage(artifactName, releasedVersion, dockerRegistryIP)             					// Push Image to Private Repository
 		utils.removeImages(artifactName)  																// To clean images created on Jenkins BOX
+		subjectText = "JENKINS Notification: Successful Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'"
+		bodyText = """ <p>Successful: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p><p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>"""
+		utils.sendEmailNotification(subjectText, bodyText)
 	}catch (error) {
 		println error
 		// If there was an exception thrown, the build failed
