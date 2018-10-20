@@ -2,7 +2,7 @@
 # This script will create mirror of the source GIT Repository i.e. copy all branches/tags to CLIENT GIT. 
 
 # PREREQUISITE: git should be installed using $sudo yum install git -y
-set -e
+#set -e 
 if [ "$#" -eq "0" ] || [ "$1" == "-?" ] || [ "$1" == "--help" ];then
     echo "Usage: `basename $0` <USERNAME> <PROJECT_NAME> <REPO_ NAME> <GITHUB_USERNAME>"
     echo "e.g. `basename $0` r.satti APPQ common c-rsatti"
