@@ -15,7 +15,7 @@ node {
 			string(name: 'GITHUB_USER_NAME', description: 'CLIENT git hub user name', defaultValue: "c-rsatti", trim: true),
 			string(name: 'GIT_BRANCH', description: 'API Branch Name', defaultValue: "",trim: true),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not'),
-			string(name: 'DOCKER_PRIVATE_REGISTRY_IP', description: 'Docker Private Registry', defaultValue: "ec2dp-devops2.CLIENT.com", trim: true)
+			string(name: 'DOCKER_PRIVATE_REGISTRY_IP', description: 'Docker Private Registry', defaultValue: "CLIENT_PROJ-devops2.CLIENT.com", trim: true)
 		])
 	]
 	//projectProperties.add(pipelineTriggers([upstream(threshold: hudson.model.Result.SUCCESS,upstreamProjects: "common")]))

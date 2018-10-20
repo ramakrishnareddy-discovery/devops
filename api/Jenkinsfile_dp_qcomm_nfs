@@ -16,9 +16,9 @@ node {
 			string(name: 'GIT_BRANCH', description: 'API Branch Name', defaultValue: "",trim: true),
 			booleanParam(name: 'GIT_TAG', defaultValue: false, description: 'Tagging required or not'),
 			string(name: 'ENV', description: 'Properties Environment', defaultValue: "dev",trim: true),
-			string(name: 'VM_IP', description: 'Plese provide IP', defaultValue: "ec2dp-dev1.CLIENT.com", trim: true),
+			string(name: 'VM_IP', description: 'Plese provide IP', defaultValue: "CLIENT_PROJ-dev1.CLIENT.com", trim: true),
 			string(name: 'VM_SERVICE_ACCOUNT', description: 'Service Account User', defaultValue: "", trim: true),
-			string(name: 'DOCKER_PRIVATE_REGISTRY_IP', description: 'Docker Private Registry', defaultValue: "ec2dp-devops2.CLIENT.com", trim: true)
+			string(name: 'DOCKER_PRIVATE_REGISTRY_IP', description: 'Docker Private Registry', defaultValue: "CLIENT_PROJ-devops2.CLIENT.com", trim: true)
 		])
 	]
 	//projectProperties.add(pipelineTriggers([upstream(threshold: hudson.model.Result.SUCCESS,upstreamProjects: "common")]))
