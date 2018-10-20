@@ -1,5 +1,6 @@
 
 #!/usr/bin/env sh
+# This Script output the docker image tag
 set -e
 if [ "$#" -eq "0" ] || [ "$1" == "-?" ] || [ "$1" == "--help" ];then
     echo "Usage: `basename $0` <DOCKER_PRIVATE_REGISTRY_IP:PORT> <BINARY_NAME>"

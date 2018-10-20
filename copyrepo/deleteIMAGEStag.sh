@@ -2,7 +2,7 @@
 
 #THIS SCRIPT ACCEPTS COMMA SEPARATED DOCKER IMAGE TAGS AND REMOVE ONE BY ONE.
  
-# Docker Image deletion is two step process. 1) delete ALL THE MENTION IMAGE TAGS 2) delete respective(whose tag already deleted) image. 
+# Docker Image deletion is two step process. 1) delete ALL THE MENTIONED IMAGE TAGS 2) delete respective(whose tag already deleted) image. 
 # STEP 1) ./<CURRENT_SCRIPT_NAME>.sh 10.0.31.225:5000 qualcomm-ms-demandplanner 0.snapshot.89,0.snapshot.90,3.5-10.98
 # SETP 2) docker exec -it registry bin/registry garbage-collect /etc/docker/registry/config.yml
 
