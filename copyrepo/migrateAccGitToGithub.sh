@@ -9,6 +9,8 @@ if [ "$#" -eq "0" ] || [ "$1" == "-?" ] || [ "$1" == "--help" ];then
     exit 1
 fi
 
+# https://stackoverflow.com/questions/12806176/checking-for-installed-packages-and-if-not-found-install
+sudo rpm --quiet --query git || yum install -y git
 
 if [ ! -d "./${2}/${3}" ]; then
   echo "cloning" ${3}
