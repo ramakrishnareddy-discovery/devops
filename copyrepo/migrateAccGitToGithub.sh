@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# This script will create mirror of the source GIT Repository i.e. copy all branches/tags to CLIENT GIT. 
+# This script will create mirror of the source GIT Repository REFERENCES i.e. copy all branches/tags REFERENCES to CLIENT GIT. 
 
 # PREREQUISITE: git should be installed using $sudo yum install git -y
 #set -e 
