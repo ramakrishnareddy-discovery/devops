@@ -2,7 +2,7 @@
 @Library('JenkinsSharedLibrary') _
 
 /*
-	This pipeline will PROMOTE "qualcomm-ms-priorityconfig", "qualcomm-ms-demandplanner", "demandplannerui" to User Provided Environments.
+	This pipeline will PROMOTE "CLIENT-ms-priorityconfig", "CLIENT-ms-demandplanner", "demandplannerui" to User Provided Environments.
 */
 node {
 	def projectProperties = [
@@ -10,7 +10,7 @@ node {
 		disableConcurrentBuilds(),
 		parameters([
 			string(name: 'PROMOTE_ENV_IP', description: '', defaultValue: "", trim: true),
-			choice(name: 'APPLICATION_NAME',choices: ["qualcomm-ms-priorityconfig", "qualcomm-ms-demandplanner", "demandplannerui"].join("\n"), description: 'Artifact Name'),
+			choice(name: 'APPLICATION_NAME',choices: ["CLIENT-ms-priorityconfig", "CLIENT-ms-demandplanner", "demandplannerui"].join("\n"), description: 'Artifact Name'),
 			string(name: 'APPLICATION_VERSION', description: '', defaultValue: "", trim: true),
 			string(name: 'ENV', description: '', defaultValue: "", trim: true),
 			string(name: 'VM_SERVICE_ACCOUNT', description: 'Service Account User', defaultValue: "centos", trim: true),
