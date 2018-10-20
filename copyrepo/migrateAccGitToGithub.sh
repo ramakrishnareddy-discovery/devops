@@ -8,7 +8,7 @@ if [ "$#" -eq "0" ] || [ "$1" == "-?" ] || [ "$1" == "--help" ];then
 fi
 
 
-if [ ! -d "./${2}/${3}" ] ; then
+if [ ! -d "./${2}/${3}" ]; then
   echo "cloning" ${3}
   git clone --mirror https://${1}@innersource.accenture.com/scm/${2}/${3}.git ./${2}/${3}
 fi
