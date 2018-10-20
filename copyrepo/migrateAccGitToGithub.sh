@@ -1,5 +1,7 @@
 #!/usr/bin/env sh
-# This script will create mirror of the Accenture GIT Repository i.e. copy all branches/tags to Qualcomm GIT. 
+# This script will create mirror of the source GIT Repository i.e. copy all branches/tags to CLIENT GIT. 
+
+# PREREQUISITE: git should be installed using $sudo yum install git -y
 set -e
 if [ "$#" -eq "0" ] || [ "$1" == "-?" ] || [ "$1" == "--help" ];then
     echo "Usage: `basename $0` <USERNAME> <PROJECT_NAME> <REPO_ NAME> <GITHUB_USERNAME>"
@@ -10,11 +12,11 @@ fi
 
 if [ ! -d "./${2}/${3}" ]; then
   echo "cloning" ${3}
-  git clone --mirror https://${1}@innersource.accenture.com/scm/${2}/${3}.git ./${2}/${3}
+  git clone --mirror https://${1}@innersource.<SOURCE_GIT>.com/scm/${2}/${3}.git ./${2}/${3}
 fi
 
   cd ./${2}/${3}
   git fetch
 
-  git remote add dpgithub https://github.qualcomm.com/${4}/${3}.git
+  git remote add dpgithub https://github.<CLIENT_GIT>.com/${4}/${3}.git
   git push --mirror dpgithub
