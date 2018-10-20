@@ -8,7 +8,7 @@
 
 set -e
 if [ "$#" -eq "0" ] || [ "$1" == "-?" ] || [ "$1" == "--help" ];then
-    echo "Usage: `basename $0` <DOCKER_PRIVATE_REGISTRY_IP:PORT> <BINARY_NAME> <TAG>"
+    echo "Usage: `basename $0` <DOCKER_PRIVATE_REGISTRY_IP:PORT> <BINARY_NAME> <TAG1>,<TAG2>,<TAG3>,<TAG4>"
     echo "e.g. `basename $0` 10.0.31.225:5000 qualcomm-ms-demandplanner 0.snapshot.89,4.05-12,,3.12.0"
     exit 1
 fi
