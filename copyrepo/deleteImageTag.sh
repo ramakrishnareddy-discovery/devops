@@ -1,5 +1,5 @@
-
 #!/usr/bin/env sh
+
 # Docker Image deletion is two step process. 1) delete image tag 2) delete respective(whose tag already deleted) image. 
 # STEP 1) Execution Example : for i in {1..N}; do ./<CURRENT_SCRIPT_NAME>.sh;done
 # SETP 2) docker exec -it registry bin/registry garbage-collect /etc/docker/registry/config.yml

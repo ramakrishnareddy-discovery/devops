@@ -1,4 +1,5 @@
 #!/bin/bash
+# THIS SCRIT SHOWS COMMA SEPARATED VALUES ITERATION
 set -e
 if [ "$#" -eq "0" ] || [ "$1" == "-?" ] || [ "$1" == "--help" ];then
     echo "Usage: `basename $0` <comma separated values>"

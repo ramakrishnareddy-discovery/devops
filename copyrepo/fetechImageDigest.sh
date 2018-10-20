@@ -1,4 +1,3 @@
-
 #!/usr/bin/env sh
 # This Script output the docker image tag
 set -e
