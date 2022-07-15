@@ -33,8 +33,8 @@ node {
 		def mvnHome = tool name: "Maven_V3"
 		env.PATH = "${mvnHome}/bin:${env.PATH}"
 
-		def apiRepoUrl = 'ssh://git@innersource.accenture.com/appq/demandplannerapi.git'
-		def distroRepoUrl = 'ssh://git@innersource.accenture.com/appq/distro_api.git'
+		def apiRepoUrl = 'ssh://git@abc.com/appq/demandplannerapi.git'
+		def distroRepoUrl = 'ssh://git@abc.com/appq/distro_api.git'
 
 		// "/product/jenkins" folder should exist and have jenkins user permissions.
 		distroDirPath =  "/product/jenkins/distro_api" //"/tmp/jenkins/distro_api" //"/product/jenkins/lib/distro_api"
